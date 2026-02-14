@@ -1,0 +1,37 @@
+Healthsquare
+user: healthsq
+Pass: UfoH3ezU
+
+Directuser
+User: demouser
+Pass: 9c2x*cZM
+
+demouser - direct user agent
+harish@proactivesms.in
+EzGWWtIm
+
+reseller Admin
+user: Devtest
+pass: 7%3uShWk
+
+reseller user with otp enable
+user: demores
+pass: QZ@5x4bC
+
+reseller user with otp enable
+user: dummy
+pass: 12345678
+
+sales person  SALESPERSON
+user: salesnew
+pass: B0P8Ql8d
+
+account person  ACCOUNTUSER
+user: account
+pass: gsTcR$Y5
+
+=====================remember before build ==========
+1.sidebar - replace menuitems to filteredItems
+2. login page - replace systeminfo and ip with live api
+3.apiclient - remove proxy 
+4.remove key from apiclient.js - admin,reseller,directuser

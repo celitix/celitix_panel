@@ -1,0 +1,46 @@
+{
+    "version": "7.0",
+    "screens": [
+        {
+            "id": "WELCOME",
+            "title": "Welcome",
+            "layout": {
+                "type": "SingleColumnLayout",
+                "children": [
+                    {
+                        "type": "TextHeading",
+                        "text": "heading content",
+                        "visible": "${form.dropDown_one == '1'}"
+                    },
+                    {
+                        "type": "TextSubheading",
+                        "text": "subheading content",
+                        "visible": "${form.dropDown_one == '2'}"
+                    },
+                    {
+                        "name": "dropDown_one",
+                        "type": "Dropdown",
+                        "label": "label",
+                        "required": false,
+                        "data-source": [
+                            {
+                                "id": "1",
+                                "title": "Option 1",
+                                "description": "asdasd",
+                                "metadata": "sdfsdf"
+                            },
+                            {
+                                "id": "2",
+                                "title": "Option 2",
+                                "description": "sdfsdfds",
+                                "metadata": "fsdfsdf"
+                            }
+                        ],
+                        "visible": true
+                    }
+                ]
+            },
+            "terminal": true
+        }
+    ]
+}

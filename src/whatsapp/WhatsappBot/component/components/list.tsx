@@ -1,0 +1,688 @@
+import { set } from "date-fns";
+import React, { useEffect, useRef, useState } from "react";
+import toast from "react-hot-toast";
+import { Tooltip } from "@mui/material";
+import { motion } from "framer-motion";
+
+// ICONS
+import { MdOutlineDeleteForever } from "react-icons/md";
+import AddIcon from "@mui/icons-material/Add";
+import { AiOutlineInfoCircle } from "react-icons/ai";
+import {
+  FormatBoldOutlined,
+  FormatItalicOutlined,
+  FormatStrikethroughOutlined,
+} from "@mui/icons-material";
+import FormatListBulletedIcon from "@mui/icons-material/FormatListBulleted";
+
+// COMPONENTS
+import { Textarea } from "@/components/ui/textarea";
+import AnimatedDropdown from "@/whatsapp/components/AnimatedDropdown";
+import InputField from "@/whatsapp/components/InputField";
+import { Button } from "@/components/ui/button";
+import { extractVariable } from "./helper/extractVariable";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import CustomTooltip from "@/components/common/CustomTooltip";
+import CustomEmojiPicker from "@/whatsapp/components/CustomEmojiPicker";
+
+
+
+export const List = ({
+  id,
+  nodesInputData,
+  setNodesInputData,
+  allVariables,
+  addVariable,
+}: {
+  id: number;
+  nodesInputData: any;
+  setNodesInputData: React.Dispatch<React.SetStateAction<{}>>;
+  allVariables: any[];
+  addVariable: (data: String) => void;
+}) => {
+  const inputRef = useRef(null);
+  const fileInputRef = useRef(null);
+  const [options, setOptions] = useState([
+    {
+      option: "",
+      value: "",
+    },
+  ]);
+
+  function handleOptionAdd() {
+    if (options.length >= 10) {
+      toast.error("You can add a maximum of 10 options.");
+      return;
+    }
+    setOptions((prev) => [
+      ...prev,
+      {
+        option: "",
+        value: "",
+      },
+    ]);
+  }
+
+  function handleOptionDelete(index: number) {
+    if (options.length === 0) return;
+    if (options.length === 1) {
+      return;
+    }
+
+    const newOptions = [...options];
+    newOptions.splice(index, 1);
+    setOptions(newOptions);
+  }
+
+  function handleOptionInput(e: any, type: string, index: number) {
+    if (options.length === 0) return;
+
+    const newOptions = [...options];
+    newOptions[index][type] = e;
+    setOptions(newOptions);
+  }
+
+  useEffect(() => {
+    const nodeData = nodesInputData[id];
+
+    // if (!nodeData) return;
+
+    const variable = extractVariable({ message: nodeData?.message });
+
+    variable && addVariable(variable);
+
+    setNodesInputData((prev) => ({
+      ...prev,
+      [id]: {
+        ...prev[id],
+        variable,
+        type: "text",
+        text: nodeData?.text || nodeData?.listHeading,
+      },
+    }));
+    const listItems = [];
+    nodeData?.options?.forEach((item: any) => {
+      const data = {
+        option: "",
+        value: "",
+      };
+      data.option = item.option;
+      data.value = item.value;
+      listItems.push(data);
+    });
+
+    listItems.length > 0
+      ? setOptions(listItems)
+      : setOptions([{ option: "", value: "" }]);
+  }, [id]);
+
+  useEffect(() => {
+    setNodesInputData((prev) => ({
+      ...prev,
+      [id]: {
+        ...prev[id],
+        options: options,
+      },
+    }));
+  }, [options]);
+
+  const handleAddVariable = (e: any) => {
+    setNodesInputData((prev) => ({
+      ...prev,
+      [id]: {
+        ...prev[id],
+        variable: e,
+      },
+    }));
+    if (!e) return;
+    const newTag = `{{${e}}}`;
+    setNodesInputData((prev) => ({
+      ...prev,
+      [id]: {
+        ...prev[id],
+        message: (prev[id]?.message || "") + newTag,
+      },
+    }));
+  };
+
+  const handleFileUpload = async (event: any) => {
+    const file = event.target.files[0];
+
+    setNodesInputData((prev) => ({
+      ...prev,
+      [id]: {
+        ...prev[id],
+        text: file,
+      },
+    }));
+  };
+
+  const [listMode, setListMode] = React.useState<
+    Record<string | number, boolean>
+  >({});
+
+  // convenience
+  function updateMessage(newVal: string) {
+    setNodesInputData((prev) => ({
+      ...prev,
+      [id]: { ...prev[id], message: newVal },
+    }));
+  }
+
+  function addFormat(formatType: "bold" | "italic" | "strike" | "list") {
+    const el = inputRef.current;
+    if (!el) return;
+
+    const input = nodesInputData[id]?.message || "";
+    const selectionStart = el.selectionStart ?? 0;
+    const selectionEnd = el.selectionEnd ?? 0;
+
+    // inline formats
+    const inline = {
+      bold: { start: "*", end: "*" },
+      italic: { start: "_", end: "_" },
+      strike: { start: "~", end: "~" },
+    } as const;
+
+    if (formatType !== "list") {
+      const selected = input.slice(selectionStart, selectionEnd);
+      const { start, end } = inline[formatType];
+      const newValue =
+        input.slice(0, selectionStart) +
+        start +
+        selected +
+        end +
+        input.slice(selectionEnd);
+
+      updateMessage(newValue);
+
+      requestAnimationFrame(() => {
+        // keep caret after closing token
+        const pos = selectionEnd + start.length + end.length;
+        el.setSelectionRange(pos, pos);
+        el.focus();
+      });
+      return;
+    }
+
+    // LIST handling
+    const hasSelection = selectionStart !== selectionEnd;
+    if (hasSelection) {
+      // prefix each non-empty selected line with "- "
+      const selected = input.slice(selectionStart, selectionEnd);
+      const transformed = selected
+        .split(/\r?\n/)
+        .map((l) => (l.trim().length ? (l.startsWith("- ") ? l : `- ${l}`) : l))
+        .join("\n");
+
+      const newValue =
+        input.slice(0, selectionStart) +
+        transformed +
+        input.slice(selectionEnd);
+      updateMessage(newValue);
+
+      requestAnimationFrame(() => {
+        el.setSelectionRange(
+          selectionStart,
+          selectionStart + transformed.length
+        );
+        el.focus();
+      });
+    } else {
+      // insert "- " at caret and enable list mode
+      const insert = "- ";
+      const newValue =
+        input.slice(0, selectionStart) + insert + input.slice(selectionStart);
+      updateMessage(newValue);
+
+      setListMode((m) => ({ ...m, [id]: true }));
+
+      requestAnimationFrame(() => {
+        const pos = selectionStart + insert.length;
+        el.setSelectionRange(pos, pos);
+        el.focus();
+      });
+    }
+  }
+
+  function handleKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
+    if (!listMode[id]) return;
+
+    const el = e.currentTarget;
+    const value = el.value;
+    const { selectionStart, selectionEnd } = el;
+
+    // current line bounds + content
+    const lineStart = value.lastIndexOf("\n", selectionStart - 1) + 1;
+    const nextNl = value.indexOf("\n", selectionStart);
+    const lineEnd = nextNl === -1 ? value.length : nextNl;
+    const currentLine = value.slice(lineStart, lineEnd);
+
+    // ENTER: continue list or exit on empty bullet
+    if (e.key === "Enter") {
+      e.preventDefault();
+
+      // exit if current line empty or just "- "
+      const trimmed = currentLine.trim();
+      if (!trimmed || trimmed === "-") {
+        const newVal =
+          value.slice(0, selectionStart) + "\n" + value.slice(selectionEnd);
+        updateMessage(newVal);
+        setListMode((m) => ({ ...m, [id]: false }));
+
+        requestAnimationFrame(() => {
+          const pos = selectionStart + 1;
+          el.setSelectionRange(pos, pos);
+          el.focus();
+        });
+        return;
+      }
+
+      // continue list
+      const insert = "\n- ";
+      const newVal =
+        value.slice(0, selectionStart) + insert + value.slice(selectionEnd);
+      updateMessage(newVal);
+
+      requestAnimationFrame(() => {
+        const pos = selectionStart + insert.length;
+        el.setSelectionRange(pos, pos);
+        el.focus();
+      });
+    }
+
+    // BACKSPACE at start of "- " → remove bullet, maybe exit
+    if (e.key === "Backspace") {
+      const caretInFirstTwo = selectionStart - lineStart <= 2;
+      const startsWithDash = currentLine.startsWith("- ");
+
+      if (caretInFirstTwo && startsWithDash) {
+        e.preventDefault();
+        const withoutDash = currentLine.replace(/^-\s?/, "");
+        const newVal =
+          value.slice(0, lineStart) + withoutDash + value.slice(lineEnd);
+        updateMessage(newVal);
+
+        const shouldExit = withoutDash.trim().length === 0;
+        if (shouldExit) setListMode((m) => ({ ...m, [id]: false }));
+
+        requestAnimationFrame(() => {
+          const pos = lineStart;
+          el.setSelectionRange(pos, pos);
+          el.focus();
+        });
+      }
+    }
+  }
+
+  function insertEmoji(emoji: string) {
+    if (!inputRef.current) return;
+    const input = nodesInputData[id]?.message || "";
+    if (input?.length >= 4096) return;
+
+    const inputEl = inputRef.current;
+
+    const start = inputEl.selectionStart;
+    const end = inputEl.selectionEnd;
+
+    const newText = input.substring(0, start) + emoji + input.substring(end);
+
+    setNodesInputData((prev) => ({
+      ...prev,
+      [id]: {
+        ...prev[id],
+        message: newText,
+      },
+    }));
+
+    requestAnimationFrame(() => {
+      inputEl.setSelectionRange(start + emoji.length, start + emoji.length);
+      inputEl.focus();
+    });
+
+    //  inputEl.setSelectionRange(start + emoji.length, start + emoji.length);
+    //  inputEl.focus();
+
+    // setTimeout(() => {
+    //   inputEl.setSelectionRange(start + emoji.length, start + emoji.length);
+    //   inputEl.focus();
+    // }, 0);
+  }
+
+  return (
+    <>
+      <div className="flex gap-2">
+        <div className="w-full">
+          <InputField
+            id="text"
+            name="text"
+            tooltipContent="List Heading"
+            placeholder="Enter List Heading"
+            maxLength="60"
+            // label={nodesInputData[id]?.type === "text" ? "List Heading" : "URL"}
+            label={"List Heading"}
+            value={nodesInputData[id]?.text}
+            onChange={(e: { target: { value: any } }) => {
+              setNodesInputData((prev) => ({
+                ...prev,
+                [id]: {
+                  ...prev[id],
+                  type: "text",
+                  text: e.target.value,
+                },
+              }));
+            }}
+          />
+          <p className="text-xs mt-2">
+            {nodesInputData[id]?.text?.length || 0}/60
+          </p>
+        </div>
+        {/* <AnimatedDropdown
+          id="type"
+          name="type"
+          label="Type"
+          options={[
+            { label: "Text", value: "text" },
+            { label: "Image", value: "image" },
+            { label: "Video", value: "video" },
+            { label: "Document", value: "document" },
+          ]}
+          value={nodesInputData[id]?.type}
+          onChange={(e: any) => {
+            setNodesInputData((prev) => ({
+              ...prev,
+              [id]: {
+                ...prev[id],
+                type: e,
+              },
+            }));
+          }}
+        />
+
+        {nodesInputData[id]?.type !== "text" && (
+          <AnimatedDropdown
+            id="selectChoice"
+            name="selectChoice"
+            label="Select Choice"
+            options={[
+              { value: "url", label: "Enter Url" },
+              { value: "upload", label: "Upload" },
+            ]}
+            value={nodesInputData[id]?.selectedOption}
+            onChange={(e) => {
+              setNodesInputData(() => ({
+                ...nodesInputData,
+                [id]: {
+                  ...nodesInputData[id],
+                  selectedOption: e,
+                  text: "",
+                },
+              }));
+            }}
+          />
+        )}
+        {nodesInputData[id]?.selectedOption !== "upload" && (
+          <InputField
+            id="text"
+            name="text"
+            label={nodesInputData[id]?.type === "text" ? "List Heading" : "URL"}
+            value={nodesInputData[id]?.text}
+            onChange={(e: { target: { value: any } }) => {
+              setNodesInputData((prev) => ({
+                ...prev,
+                [id]: {
+                  ...prev[id],
+                  text: e.target.value,
+                },
+              }));
+            }}
+          />
+        )}
+        {nodesInputData[id]?.selectedOption === "upload" && (
+          <div className="flex flex-col gap-2 mt-0">
+            <Label
+              htmlFor="uplaodfile"
+              className="text-sm font-medium text-gray-800 font-"
+            >
+              Upload File
+            </Label>
+            <Input
+              type="file"
+              id="uplaodfile"
+              name="uplaodfile"
+              onChange={handleFileUpload}
+              accept={`${nodesInputData[id]?.type}/*`}
+              required
+              ref={fileInputRef}
+              className="w-[250px]"
+            />
+          </div>
+        )} */}
+      </div>
+
+      <div>
+        <label className="text-sm font-medium text-gray-900 mb-2 ml-2">
+          Body
+        </label>
+        <Textarea
+          id="body"
+          placeholder="Body"
+          value={nodesInputData[id]?.message}
+          onChange={(e: { target: { value: any } }) => {
+            setNodesInputData((prev) => ({
+              ...prev,
+              [id]: {
+                ...prev[id],
+                message: e.target.value,
+              },
+            }));
+          }}
+          maxLength={4096}
+          className="resize-none h-50"
+          ref={inputRef}
+          onKeyDown={handleKeyDown}
+        />
+        <div className="flex justify-between">
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.25, ease: "easeOut" }}
+            className="flex items-center gap-2 mt-2 bg-white border border-slate-200 rounded-xl px-2 py-2 shadow w-max"
+          >
+            <Tooltip title="Bold" arrow>
+              <button
+                onClick={() => addFormat("bold")}
+                className="hover:bg-indigo-100 text-indigo-500 rounded-md p-1 transition cursor-pointer"
+              >
+                <FormatBoldOutlined fontSize="small" />
+              </button>
+            </Tooltip>
+            <Tooltip title="Italic" arrow>
+              <button
+                onClick={() => addFormat("italic")}
+                className="hover:bg-indigo-100 text-indigo-500 rounded-md p-1 transition cursor-pointer"
+              >
+                <FormatItalicOutlined fontSize="small" />
+              </button>
+            </Tooltip>
+            <Tooltip title="Strikethrough" arrow>
+              <button
+                onClick={() => addFormat("strike")}
+                className="hover:bg-indigo-100 text-indigo-500 rounded-md p-1 transition cursor-pointer"
+              >
+                <FormatStrikethroughOutlined fontSize="small" />
+              </button>
+            </Tooltip>
+            <Tooltip title="List" arrow>
+              <button
+                onClick={() => addFormat("list")}
+                className="hover:bg-indigo-100 text-indigo-500 rounded-md p-1 transition cursor-pointer"
+              >
+                <FormatListBulletedIcon fontSize="small" />
+              </button>
+            </Tooltip>
+            <div className="w-px h-5 bg-slate-300 mx-1"></div>
+            <Tooltip title="Emoji Picker" arrow>
+              <CustomEmojiPicker position="top" onSelect={insertEmoji} />
+            </Tooltip>
+          </motion.div>
+
+          <p className="text-xs mt-2">
+            {nodesInputData[id]?.message?.length || 0}/4096
+          </p>
+        </div>
+      </div>
+
+      <div>
+        <AnimatedDropdown
+          id="selectVaribleDropdown"
+          name="selectVaribleDropdown"
+          label="Select Variable"
+          options={allVariables.map((v) => ({
+            label: v,
+            value: v,
+          }))}
+          value={nodesInputData[id]?.variable}
+          onChange={(e: any) => {
+            handleAddVariable(e);
+          }}
+        />
+      </div>
+
+      <div className="w-full mt-2">
+        <InputField
+          id="text"
+          name="text"
+          tooltipContent="Give a footer for the list. Maximum 60 characters."
+          maxLength="60"
+          label={"List Footer"}
+          placeholder="Enter List Footer"
+          value={nodesInputData[id]?.listFooter}
+          onChange={(e: { target: { value: any } }) => {
+            setNodesInputData((prev) => ({
+              ...prev,
+              [id]: {
+                ...prev[id],
+                listFooter: e.target.value,
+              },
+            }));
+          }}
+        />
+        <p className="text-xs mt-2">
+          {nodesInputData[id]?.listFooter?.length || 0}/60
+        </p>
+      </div>
+
+      <div className="w-full mt-2">
+        {/* <div className="flex justify-end">
+          <button onClick={handleOptionAdd}>
+            <AddIcon />
+          </button>
+        </div> */}
+        <div className="flex justify-end items-center gap-2 mb-2">
+          {/* <h1 className="text-lg font-semibold mb-2">List Items</h1> */}
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleOptionAdd}
+              className="flex items-center gap-2 px-2 py-1 rounded-full bg-black text-white text-xs font-medium shadow-md"
+            >
+              <AddIcon fontSize="small" />
+            </button>
+          </div>
+          <div className="mb-1">
+            <CustomTooltip
+              title={
+                "For List Row: Supports text header type only. Maximum 60 characters. For List Items: Maximum 72 characters."
+              }
+              placement={"top"}
+              arrow
+            >
+              <span>
+                <AiOutlineInfoCircle className="text-gray-500 cursor-pointer hover:text-gray-700" />
+              </span>
+            </CustomTooltip>
+          </div>
+        </div>
+        <div className="space-y-2 ">
+          {options?.map((option, index) => (
+            <div
+              className="flex gap-2 justify-center items-start w-full"
+              key={index}
+            >
+              <div className="w-full">
+                <InputField
+                  id="option"
+                  name="option"
+                  label={`Row-Title-${index + 1}`}
+                  placeholder="Enter Row Title"
+                  value={options[index]?.option}
+                  onChange={(e: { target: { value: any } }) => {
+                    handleOptionInput(e.target.value, "option", index);
+                  }}
+                  maxLength="24"
+                />
+                <p className="text-xs mt-2">
+                  {nodesInputData[id]?.options[index]?.option?.length || 0}/24
+                </p>
+              </div>
+              <div className="w-full">
+                <InputField
+                  id="value"
+                  name="value"
+                  label={`Row-Description-${index + 1}`}
+                  placeholder="Enter Row Description"
+                  value={options[index]?.value}
+                  onChange={(e: { target: { value: any } }) => {
+                    handleOptionInput(e.target.value, "value", index);
+                  }}
+                  maxLength="72"
+                />
+                <p className="text-xs mt-2">
+                  {nodesInputData[id]?.options[index]?.value?.length || 0}/72
+                </p>
+              </div>
+
+              {options.length > 1 && (
+                <span
+                  id="deleteInput"
+                  // name="deleteInput"
+                  // variant="destructive"
+                  onClick={() => handleOptionDelete(index)}
+                  className="mt-7 text-red-700 cursor-pointer hover:text-red-700 transition-colors duration-200 "
+                >
+                  <MdOutlineDeleteForever fontSize={24} />
+                </span>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* <div className="mt-4">
+        <h4 className="text-sm font-medium text-gray-800 mb-1">Option Nodes</h4>
+        <div className="flex flex-col gap-2">
+          {options.map((opt, idx) => (
+            <div
+              key={`option-node-${idx}`}
+              className="relative bg-gray-100 px-3 py-2 rounded border text-sm"
+            >
+              {opt.option || `Option ${idx + 1}`}
+              <Handle
+                type="source"
+                position={Position.Right}
+                id={`opt-${idx}`}
+                style={{
+                  top: "50%",
+                  transform: "translateY(-50%)",
+                  right: -6,
+                  background: "#333",
+                }}
+              />
+            </div>
+          ))}
+        </div>
+      </div> */}
+    </>
+  );
+};

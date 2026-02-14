@@ -1,0 +1,2129 @@
+import { useEffect, useState, useRef, useCallback } from "react";
+import { SpeedDial } from "primereact/speeddial";
+import { Sidebar } from "primereact/sidebar";
+import toast from "react-hot-toast";
+import { Dialog } from "primereact/dialog";
+import { RadioButton } from "primereact/radiobutton";
+import dayjs from "dayjs";
+import { Tooltip } from "primereact/tooltip";
+import { motion, AnimatePresence } from "framer-motion";
+import { select } from "@material-tailwind/react";
+import moment from "moment";
+
+// ICONS
+import { FiSend } from "react-icons/fi";
+import { BsJournalArrowDown, BsThreeDotsVertical } from "react-icons/bs";
+import { IoArrowBack } from "react-icons/io5";
+import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
+import { FaReply } from "react-icons/fa6";
+import {
+  BoltRounded,
+  FormatBoldOutlined,
+  FormatItalicOutlined,
+  FormatStrikethroughOutlined,
+  LocalPhoneOutlined,
+  SearchOutlined,
+} from "@mui/icons-material";
+import AttachmentOutlinedIcon from "@mui/icons-material/AttachmentOutlined";
+import ImageOutlinedIcon from "@mui/icons-material/ImageOutlined";
+import TableChartOutlinedIcon from "@mui/icons-material/TableChartOutlined";
+import FilePresentOutlinedIcon from "@mui/icons-material/FilePresentOutlined";
+import LocalPhoneOutlinedIcon from "@mui/icons-material/LocalPhoneOutlined";
+import SupportAgentOutlinedIcon from "@mui/icons-material/SupportAgentOutlined";
+import AccessAlarmOutlinedIcon from "@mui/icons-material/AccessAlarmOutlined";
+import ArrowRightAltOutlinedIcon from "@mui/icons-material/ArrowRightAltOutlined";
+import { MdOutlineAddLocationAlt } from "react-icons/md";
+import FileDownloadOutlinedIcon from "@mui/icons-material/FileDownloadOutlined";
+import QuestionAnswerOutlinedIcon from "@mui/icons-material/QuestionAnswerOutlined";
+
+// CONTEXT
+import { useUser } from "@/context/auth";
+import { useWabaAgentContext } from "@/context/WabaAndAgent.jsx";
+import { useSettings } from "@/context/LiveChatSettingContext";
+
+// APIS
+import {
+  assignUserToAgent,
+  downloadAttachment,
+  fetchAllConversations,
+  fetchReplyData,
+  fetchSpecificConversations,
+  getWabaList,
+  getWabaShowGroupsList,
+  getWabaTemplate,
+  getWabaTemplateDetails,
+  loadNewChat,
+  readMessage,
+  sendInputMessageToUser,
+  sendMessageToUser,
+  sendTemplateMessageToUser,
+  uploadImageFile,
+  getTemplateDetialsById,
+} from "../../apis/whatsapp/whatsapp";
+import { fetchAllAgents } from "@/apis/rcs/rcs";
+import { getAgentList } from "@/apis/Agent/Agent";
+
+// COMPONENTS
+import CustomEmojiPicker from "../components/CustomEmojiPicker";
+import InputField from "../components/InputField";
+import ImagePreview from "./ImagePreview";
+import UniversalButton from "../components/UniversalButton";
+import Loader from "../components/Loader";
+import { TemplatePreview } from "./component/TemplatePreview";
+import AnimatedDropdown from "../components/AnimatedDropdown";
+import { Variables } from "./component/Variables";
+import UniversalSkeleton from "@/components/common/UniversalSkeleton";
+import { ChatScreen } from "./component/chat/ChatScreen";
+import { ChatSidebar } from "./component/chat/Sidebar";
+import { InputData } from "./component/InputData";
+import DropdownWithSearch from "../components/DropdownWithSearch";
+
+// Function to extract variables from text (e.g., {{1}})
+const extractVariablesFromText = (text) => {
+  const regex = /{{(\d+)}}/g;
+  let match;
+  const variables = [];
+  while ((match = regex.exec(text)) !== null) {
+    if (!variables.includes(match[1])) {
+      variables.push(match[1]);
+    }
+  }
+  return variables;
+};
+
+export default function WhatsappLiveChat() {
+  const { user } = useUser();
+  const fileInputRef = useRef(null);
+  const [visibleRight, setVisibleRight] = useState(false);
+  const [dialogVisible, setDialogVisible] = useState(false);
+  const [imagePreviewVisible, setImagePreviewVisible] = useState(false);
+
+  const [agentList, setAgentList] = useState([]);
+  const [agentName, setAgentname] = useState("");
+  const [groupList, setGroupList] = useState([]);
+  const [selectedAgentList, setSelectedAgentList] = useState(null);
+  const [selectedGroupList, setSelectedGroupList] = useState(null);
+  const [selectedImage, setSelectedImage] = useState("");
+  const [activeChat, setActiveChat] = useState(null);
+  const [input, setInput] = useState("");
+  const [waba, setWaba] = useState([]);
+  const [selectedWaba, setSelectedWaba] = useState("");
+  const [btnOption, setBtnOption] = useState("active");
+  const [search, setSearch] = useState("");
+
+  const [selectedAgent, setSelectedAgent] = useState(null);
+  const [allConvo, setAllConvo] = useState([]);
+  const [specificConversation, setSpecificConversation] = useState([]);
+
+  const [isFetching, setIsFetching] = useState(false);
+  const [sendMessageDialogVisible, setSendMessageDialogVisible] =
+    useState(false);
+  const [messageType, setMessageType] = useState("template");
+  const [allTemplated, setAllTemplated] = useState([]);
+  const [sendmessageData, setSendMessageData] = useState({});
+  const [templateDetails, setTemplateDetails] = useState("");
+  const [templateType, setTemplateType] = useState("");
+  const [templateTypeIsShort, setTemplateTypeIsShort] = useState("");
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [varLength, setVarLength] = useState(0);
+  const [btnVarLength, setBtnVarLength] = useState(0);
+  const [latestMessageData, setLatestMessageData] = useState({
+    srno: "",
+    replayTime: "",
+  });
+
+  const [variables, setVariables] = useState([]);
+  const [carFile, setCarFile] = useState([]);
+
+  const [btnVariables, setBtnVariables] = useState("");
+
+  const [replyData, setReplyData] = useState("");
+  const [isReply, setIsReply] = useState(false);
+
+  const inputRef = useRef(null);
+  const messageRef = useRef(null);
+
+  const [cardIndex, setCardIndex] = useState(0);
+
+  const [chatIndex, setChatIndex] = useState(1);
+  const [chatLoading, setChatLoading] = useState(false);
+
+  const [isMessageSending, setIsMessageSending] = useState(false);
+
+  const [fetchTemplate, setFetchTemplate] = useState(false);
+
+  const [locationPreview, setLocationPreview] = useState(false);
+  const [locationPreviewText, setLocationPreviewText] = useState(
+    "Do you want to share your location",
+  );
+
+  const FILE_SIZE_RULES = {
+    // IMAGES
+    "image/jpeg": 5, // MB
+    "image/png": 5,
+
+    // STICKERS
+    "image/webp_static": 0.1, // 100 KB
+    "image/webp_animated": 0.5, // 500 KB
+
+    // AUDIO
+    "audio/aac": 16,
+    "audio/amr": 16,
+    "audio/mpeg": 16, // mp3
+    "audio/mp4": 16,
+    "audio/ogg": 16, // OPUS only
+
+    // VIDEO
+    "video/3gpp": 16,
+    "video/mp4": 16,
+
+    // DOCUMENTS
+    "text/plain": 100,
+    "application/vnd.ms-excel": 100,
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": 100,
+    "application/msword": 100,
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document": 100,
+    "application/vnd.ms-powerpoint": 100,
+    "application/vnd.openxmlformats-officedocument.presentationml.presentation": 100,
+    "application/pdf": 100,
+  };
+
+  const detectStickerType = (file) => {
+    if (file.type !== "image/webp") return null;
+
+    const sizeMB = file.size / 1024 / 1024;
+
+    if (sizeMB <= 0.1) return "image/webp_static"; // static sticker
+    if (sizeMB <= 0.5) return "image/webp_animated"; // animated sticker
+
+    return "image/webp_static"; // fallback
+  };
+
+  const [locationData, setLocationData] = useState({
+    isLocation: false,
+    latitude: "",
+    longitude: "",
+  });
+  const {
+    // wabaData,
+    // wabaState,
+    // setWabaData,
+    // setWabaState,
+    chatData,
+    setChatData,
+    selectedContextWaba,
+    setSelectedContextWaba,
+    convoDetails,
+    setConvoDetails,
+    setInactiveConvo,
+    setActiveConvo,
+    initialChatState,
+    setInititialChatState,
+    agentInfo,
+    setAgentInfo,
+    activeConvAgent,
+    inActiveConvAgent,
+    setActiveConvAgent,
+    setInActiveConvAgent,
+    clearAllStates,
+  } = useWabaAgentContext();
+
+  const { selectedWabaUser, setSelectedWabaUser } = useSettings();
+
+  function handleNextCard() {
+    setCardIndex(cardIndex + 1);
+  }
+
+  function handlePreviousCard() {
+    if (cardIndex === 0) return;
+    setCardIndex(cardIndex - 1);
+  }
+
+  //merge related States
+  const [chatState, setChatState] = useState({
+    active: null,
+    input: "",
+    allConversations: [],
+    specificConversation: [],
+    latestMessage: {
+      srno: "",
+      replayTime: "",
+    },
+    replyData: "",
+    isReply: false,
+  });
+
+  const [isSubscribe, setIsSubscribe] = useState(false);
+  const [isSpeedDialOpen, setIsSpeedDialOpen] = useState(false);
+
+  const [isSendingTemplate, setIsSendingTemplate] = useState(false);
+  const [aiResponses, setAiResponses] = useState([]);
+
+  // async function fetchWaba() {
+  //   const res = await getWabaList();
+
+  //   setWabaState((prev) => ({
+  //     ...prev,
+  //     waba: res,
+  //   }));
+
+  //   setSelectedWaba(res[0]?.mobileNo);
+  // }
+
+  // useEffect(() => {
+  //   fetchWaba();
+  // }, []);
+
+  // useEffect(() => {
+  //   if (!selectedWaba) return;
+  //   const first = wabaState.waba?.[0];
+
+  //   if (!first) return;
+
+  //   setWabaState((prev) => ({
+  //     ...prev,
+  //     selectedWaba: first.mobileNo,
+  //     wabaSrno: first.wabaSrno,
+  //   }));
+  // }, [selectedWaba]);
+
+  // useEffect(() => {
+  //   async function fetchWaba() {
+  //     try {
+  //       const res = await getWabaList();
+
+  //       const first = res?.[0];
+
+  //       setWabaState(prev => ({
+  //         ...prev,
+  //         waba: res,
+  //         selectedWaba: first?.mobileNo || "",
+  //         wabaSrno: first?.wabaSrno || ""
+  //       }));
+
+  //       setSelectedWaba(first?.mobileNo || "");
+  //     } catch (err) {
+  //       console.error("Error fetching WABA list:", err);
+  //     }
+  //   }
+
+  //   fetchWaba();
+  // }, []);
+
+  // useEffect(() => {
+  //   async function fetchWaba() {
+  //     try {
+  //       const res = await getWabaList();
+
+  //       setWabaState(prev => ({
+  //         ...prev,
+  //         waba: res,
+  //         selectedWaba: "",   // ← keep empty
+  //         wabaSrno: ""        // ← keep empty
+  //       }));
+
+  //       setSelectedWaba("");  // ← do NOT auto set first item
+  //     } catch (err) {
+  //       console.error("Error fetching WABA list:", err);
+  //     }
+  //   }
+
+  //   fetchWaba();
+  // }, []);
+
+  // useEffect(() => {
+  //   async function fetchWaba() {
+  //     try {
+  //       const res = await getWabaList();
+
+  //       const wabaList = Array.isArray(res) ? res : [];
+
+  //       setWabaState((prev) => ({
+  //         ...prev,
+  //         waba: wabaList,
+  //         selectedWaba: "",
+  //       }));
+
+  //       setSelectedWaba(""); // do NOT auto select first item
+  //     } catch (err) {
+  //       console.error("Error fetching WABA list:", err);
+
+  //       setWabaState((prev) => ({
+  //         ...prev,
+  //         waba: [],
+  //         selectedWaba: "",
+  //         wabaSrno: "",
+  //       }));
+  //     }
+  //   }
+
+  //   fetchWaba();
+  // }, []);
+
+  // useEffect(() => {
+  //   // clearAllStates();
+  //   if (wabaState?.waba?.length === 1) {
+  //     setSelectedWaba(wabaState.selectedWaba);
+  //   } else {
+  //     setSelectedWaba(selectedContextWaba);
+  //   }
+  // }, [wabaState?.selectedWaba, selectedContextWaba]);
+
+  // useEffect(() => {
+  //   // clearAllStates();
+  //   setWabaData(wabaState);
+  // }, [wabaState]);
+
+  // useEffect(() => {
+  //   setWabaState(wabaData);
+  // }, [selectedContextWaba]);
+
+  const insertEmoji = (emoji) => {
+    if (inputRef.current) {
+      const inputref = inputRef.current;
+      const start = inputref.selectionStart;
+      const end = inputref.selectionEnd;
+
+      const newText = input.substring(0, start) + emoji + input.substring(end);
+
+      setInput(newText);
+
+      setTimeout(() => {
+        inputref.setSelectionRange(start + emoji.length, start + emoji.length);
+        inputref.focus();
+      }, 0);
+    }
+  };
+
+  function deleteImages(index) {
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+    // setSelectedImage((prev) => {
+    //   const newSelectedImage = [...prev];
+    //   newSelectedImage.splice(index, 1);
+    //   return newSelectedImage;
+    // });
+    setSelectedImage(null);
+  }
+
+  const sendMessage = async () => {
+    const fileType = selectedImage?.type?.split("/")[0];
+
+    let replyType = "";
+
+    switch (fileType) {
+      case "image":
+        replyType = "image";
+        break;
+      case "video":
+        replyType = "video";
+        break;
+      case "audio":
+        replyType = "audio";
+        break;
+      case "sticker":
+        replyType = "sticker";
+        break;
+      case "application":
+        replyType = "document";
+        break;
+      default:
+        replyType = "text";
+        break;
+    }
+
+    const data = {
+      mobile: chatState?.active.mobileNo,
+      wabaNumber: selectedWabaUser?.mobileNo,
+      srno: chatState?.active.srno,
+      // message: input || "",
+      contactName: chatState?.active.contectName || "",
+      replyType: replyType,
+      replyFrom: "user",
+      wabaSrNo: selectedWabaUser?.wabaSrno,
+      // ...(chatState?.isReply ? {} : { message: input || "" }),
+      ...(chatState?.isReply
+        ? {}
+        : { message: input.trim() || aiResponses.data || "" }),
+      // ...(selectedImage ? {} : { message: input || "" }),
+    };
+
+    let body = {};
+
+    if (chatState?.isReply && input) {
+      body = {
+        messaging_product: "whatsapp",
+        context: {
+          message_id: chatState?.replyData?.receiptNo,
+        },
+        to: chatState?.active.mobileNo,
+        type: replyType,
+        [replyType]: {
+          preview_url: "False",
+          body: input,
+        },
+      };
+    } else if (selectedImage) {
+      const imageData = await uploadImageFile(selectedImage.files);
+      delete data.message;
+
+      body = {
+        messaging_product: "whatsapp",
+        to: chatState?.active?.mobileNo,
+        type: replyType,
+        [replyType]: {
+          caption: input || "",
+          link: imageData?.fileUrl,
+        },
+      };
+    }
+
+    try {
+      setIsMessageSending(true);
+      setInput("");
+      setSelectedImage(null);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+      const res = await sendInputMessageToUser(data, body);
+      if (res?.status !== "success") {
+        return toast.error("Error sending message2");
+      }
+      const audio = new Audio("./send-message.wav");
+      audio.play().catch((e) => {
+        // console.log("Audio play error:", e);
+      });
+      setChatState((prev) => ({
+        ...prev,
+        isReply: false,
+        replyData: "",
+        input: "",
+      }));
+
+      await handleFetchSpecificConversation();
+    } catch (e) {
+      console.log(e);
+      return;
+    } finally {
+      setIsMessageSending(false);
+    }
+  };
+
+  const items = [
+    {
+      label: "Attachment",
+      icon: <AttachmentOutlinedIcon style={{ color: "#4CAF50" }} />,
+      command: () => {
+        fileInputRef.current.click();
+      },
+    },
+    {
+      label: "Document",
+      icon: <FilePresentOutlinedIcon />,
+      command: () => {
+        fileInputRef.current.click();
+      },
+    },
+    {
+      label: "Photos & Videos",
+      icon: <ImageOutlinedIcon style={{ color: "#FF9800" }} />, // Orange
+      command: () => {
+        fileInputRef.current.click();
+      },
+    },
+    {
+      label: "Template",
+      icon: <BsJournalArrowDown style={{ color: "#3F51B5" }} />,
+      command: () => {
+        setSendMessageDialogVisible(true);
+      },
+    },
+    {
+      label: "Excel",
+      icon: <TableChartOutlinedIcon style={{ color: "#009688" }} />, // Teal
+      command: () => {
+        fileInputRef.current.click();
+      },
+    },
+    // {
+    //   label: "Send Location",
+    //   // icon: <TableChartOutlinedIcon style={{ color: "#009688" }} />, // Teal
+    //   icon: <MdOutlineAddLocationAlt className="text-indigo-500 size-5" />,
+    //   command: () => {
+    //     setLocationData({
+    //       isLocation: true,
+    //     });
+    //     getLocation();
+    //   },
+    // },
+    {
+      label: "Request Location",
+      // icon: <TableChartOutlinedIcon style={{ color: "#009688" }} />, // Teal
+      icon: <MdOutlineAddLocationAlt className="text-indigo-500 size-5" />,
+      // command: async () => {
+      //   await requestLocationData();
+      // },
+      command: () => setLocationPreview(true),
+    },
+  ];
+
+  // useEffect(() => {
+  //   const fetchConversations = async () => {
+  //     // Optional checks:
+  //     // if (!wabaState?.waba?.[0]?.mobileNo) return;
+  //     // if (!btnOption) return;
+
+  //     try {
+  //       setIsFetching(true);
+
+  //       const data = {
+  //         mobileNo: wabaState?.waba?.[0]?.mobileNo || "",
+  //         srno: 0,
+  //         active: 1, // or 0 in the other effect
+  //         search: search || "",
+  //         agentSrno: selectedAgent || "",
+  //       };
+
+  //       const res = await fetchAllConversations(data)
+
+  //       setActiveConvAgent(res.conversationEntityList);
+  //     } catch (e) {
+  //       toast.error("Error fetching active conversations");
+  //     } finally {
+  //       setIsFetching(false);
+  //     }
+  //   };
+
+  //   fetchConversations();
+  // }, []);
+
+  // useEffect(() => {
+  //   const fetchConversations = async () => {
+  //     if (!wabaState?.selectedWaba) return;
+  //     if (!btnOption) return;
+
+  //     try {
+  //       const data = {
+  //         mobileNo: wabaState?.selectedWaba,
+  //         srno: 0,
+  //         active: 1, // or 0 in the other effect
+  //         search: search || "",
+  //         agentSrno: selectedAgent || "",
+  //       };
+
+  //       setIsFetching(true);
+  //       const res = await fetchAllConversations(data);
+
+  //       setActiveConvo(res.conversationEntityList); // or setInactiveConvo
+
+  //       if (!res.conversationEntityList[0]) {
+  //         setChatState((prev) => ({
+  //           ...prev,
+  //           allConversations: [],
+  //         }));
+  //         return;
+  //       }
+
+  //       const mappedConversations = res.conversationEntityList?.map((chat) => {
+  //         const unread = res.unreadCounts.find(
+  //           (unreadChat) => unreadChat.mobile === chat.mobileNo
+  //         );
+  //         return {
+  //           ...chat,
+  //           unreadCount: unread ? unread.unreadCount : 0,
+  //         };
+  //       });
+  //       setIsFetching(false);
+
+  //       // setChatState((prev) => ({
+  //       //   ...prev,
+  //       //   allConversations: mappedConversations,
+  //       // }));
+  //     } catch (e) {
+  //       toast.error("Error fetching active conversations");
+  //     } finally {
+  //       setIsFetching(false);
+  //     }
+  //   };
+
+  //   fetchConversations();
+  // }, [wabaState?.selectedWaba]);
+
+  // useEffect(() => {
+  //   const fetchConversations = async () => {
+  //     if (!wabaState?.selectedWaba) return;
+  //     if (!btnOption) return;
+
+  //     try {
+  //       const data = {
+  //         mobileNo: wabaState?.selectedWaba,
+  //         srno: 0,
+  //         active: 0, // or 1 in the other effect
+  //         search: search || "",
+  //         agentSrno: selectedAgent || "",
+  //       };
+
+  //       setIsFetching(true);
+  //       const res = await fetchAllConversations(data);
+
+  //       setInactiveConvo(res.conversationEntityList); // or setInactiveConvo
+
+  //       if (!res.conversationEntityList[0]) {
+  //         setChatState((prev) => ({
+  //           ...prev,
+  //           allConversations: [],
+  //         }));
+  //         return;
+  //       }
+
+  //       const mappedConversations = res.conversationEntityList?.map((chat) => {
+  //         const unread = res.unreadCounts.find(
+  //           (unreadChat) => unreadChat.mobile === chat.mobileNo
+  //         );
+  //         return {
+  //           ...chat,
+  //           unreadCount: unread ? unread.unreadCount : 0,
+  //         };
+  //       });
+
+  //       // setChatState((prev) => ({
+  //       //   ...prev,
+  //       //   allConversations: mappedConversations,
+  //       // }));
+  //     } catch (e) {
+  //       toast.error("Error fetching active conversations");
+  //     } finally {
+  //       setIsFetching(false);
+  //     }
+  //   };
+
+  //   fetchConversations();
+  // }, [wabaState?.selectedWaba]);
+
+  const fetchConversations = async (activeStatus) => {
+    try {
+      const data = {
+        mobileNo: selectedWabaUser?.mobileNo,
+        srno: 0,
+        active: activeStatus,
+        search: search || "",
+        agentSrno: selectedAgent || "",
+      };
+
+      setIsFetching(true);
+      const res = await fetchAllConversations(data);
+
+      const mappedConversations = res.conversationEntityList?.map((chat) => {
+        const unread = res.unreadCounts.find(
+          (unreadChat) => unreadChat.mobile === chat.mobileNo,
+        );
+        return {
+          ...chat,
+          unreadCount: unread ? unread.unreadCount : 0,
+        };
+      });
+
+      if (activeStatus === 1) {
+        setActiveConvo(res.conversationEntityList);
+      } else {
+        setInactiveConvo(res.conversationEntityList);
+      }
+
+      // If you need to update chatState globally
+      // setChatState((prev) => ({
+      //   ...prev,
+      //   allConversations: mappedConversations || [],
+      // }));
+    } catch (e) {
+      toast.error("Error fetching conversations");
+    } finally {
+      setIsFetching(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!selectedWabaUser?.mobileNo) return;
+
+    // Run both in parallel
+    fetchConversations(1);
+    fetchConversations(0);
+  }, [selectedWabaUser?.mobileNo, search, selectedAgent]);
+
+  async function handleFetchAllConvo() {
+    if (!selectedWabaUser?.mobileNo) return;
+    if (!btnOption) return;
+    const userActive = btnOption == "active" ? 1 : 0;
+    try {
+      const data = {
+        mobileNo: selectedWabaUser?.mobileNo,
+        srno: 0,
+        active: userActive,
+        search: search || "",
+        agentSrno: selectedAgent || "",
+      };
+
+      setIsFetching(true);
+      const res = await fetchAllConversations(data);
+
+      if (data.agentSrno) {
+        setAgentInfo(res);
+      }
+      setConvoDetails(res);
+
+      if (!res.conversationEntityList[0]) {
+        setChatState((prev) => ({
+          ...prev,
+
+          allConversations: [],
+        }));
+        return;
+      }
+
+      // if (res?.unreadCounts?.length > 0) {
+      //   const audio = new Audio("./receive-message.mp3");
+      //   audio.play().catch((e) => {
+      //     console.log("Audio play error:", e);
+      //   });
+      // }
+
+      const mappedConversations = res.conversationEntityList?.map((chat) => {
+        const unread = res.unreadCounts.find(
+          (unreadChat) => unreadChat.mobile === chat.mobileNo,
+        );
+        return {
+          ...chat,
+          unreadCount: unread ? unread.unreadCount : 0,
+        };
+      });
+      setChatState((prev) => ({
+        ...prev,
+        allConversations: mappedConversations,
+        // allConversations: [],
+      }));
+
+      setChatData((prev) => ({
+        ...prev,
+        allConversations: mappedConversations,
+      }));
+    } catch (e) {
+      // console.log(e);
+      return toast.error("Error fetching all conversations");
+    } finally {
+      setIsFetching(false);
+    }
+  }
+
+  async function handleFetchAllConvoRepeat() {
+    if (!selectedWabaUser?.mobileNo) return;
+    if (!btnOption) return;
+    const userActive = btnOption == "active" ? 1 : 0;
+    try {
+      const data = {
+        mobileNo: selectedWabaUser?.mobileNo,
+        srno: 0,
+        active: userActive,
+        search: search || "",
+        agentSrno: selectedAgent || "",
+      };
+
+      const res = await fetchAllConversations(data);
+
+      if (data.agentSrno) {
+        setAgentInfo(res);
+      }
+      setConvoDetails(res);
+
+      if (!res.conversationEntityList[0]) {
+        setChatState((prev) => ({
+          ...prev,
+
+          allConversations: [],
+        }));
+        return;
+      }
+
+      // if (res?.unreadCounts?.length > 0) {
+      //   const audio = new Audio("./receive-message.mp3");
+      //   audio.play().catch((e) => {
+      //     console.log("Audio play error:", e);
+      //   });
+      // }
+
+      const mappedConversations = res.conversationEntityList?.map((chat) => {
+        const unread = res.unreadCounts.find(
+          (unreadChat) => unreadChat.mobile === chat.mobileNo,
+        );
+        return {
+          ...chat,
+          unreadCount: unread ? unread.unreadCount : 0,
+        };
+      });
+      setChatState((prev) => ({
+        ...prev,
+        allConversations: mappedConversations,
+        // allConversations: [],
+      }));
+      setChatData((prev) => ({
+        ...prev,
+        allConversations: mappedConversations,
+      }));
+    } catch (e) {
+      // console.log(e);
+      return toast.error("Error fetching all conversations");
+    }
+  }
+
+  function handleSearch() {
+    handleFetchAllConvo();
+    // setActiveChat(null);
+    setChatState((prev) => ({ ...prev, active: null }));
+  }
+
+  // useEffect(() => {
+  //   // handleFetchAllConvo();
+  //   if (!wabaState?.selectedWaba) return;
+  //   const intervalid = setInterval(() => {
+  //     handleFetchAllConvo();
+  //   }, 500);
+
+  //   return () => clearInterval(intervalid);
+  // }, [wabaState.selectedWaba, btnOption]);
+
+  // useEffect(() => {
+  //   if (!wabaState?.selectedWaba) return;
+  //   // if (!wabaState?.selectedWaba || !isSubscribe) {
+  //   //   handleFetchAllConvo();
+  //   //   return;
+  //   // }
+
+  //   // handleFetchAllConvo();
+  //   // setIsSubscribe(true);
+
+  //   const intervalId = setInterval(() => {
+  //     handleFetchAllConvo();
+  //   }, 5000);
+
+  //   return () => {
+  //     clearInterval(intervalId);
+  //   };
+  // }, [wabaState.selectedWaba, btnOption]);
+
+  // useEffect(() => {
+  //   if (!wabaState?.selectedWaba) return;
+  //   let intervalId = null;
+
+  //   if (isSubscribe) {
+  //     // handleFetchAllConvo();
+  //     intervalId = setInterval(() => {
+  //       handleFetchAllConvo();
+  //     }, 5000);
+  //   } else {
+  //     handleFetchAllConvo();
+  //     setIsSubscribe(true);
+  //   }
+
+  //   return () => {
+  //     if (intervalId) clearInterval(intervalId);
+  //   };
+  //   // setIsSubscribe(true);
+  // }, [
+  //   wabaState?.selectedWaba,
+  //   btnOption,
+  //   isSubscribe,
+  //   selectedAgent,
+  //   convoDetails,
+  // ]);
+
+  useEffect(() => {
+    if (!selectedWabaUser?.mobileNo) return;
+    handleFetchAllConvo();
+  }, [selectedWabaUser?.mobileNo, btnOption, selectedAgent]);
+
+  useEffect(() => {
+    if (!selectedWabaUser?.mobileNo) return;
+
+    // handleFetchAllConvoRepeat();
+    const intervalId = setInterval(() => {
+      handleFetchAllConvoRepeat();
+    }, 4000);
+
+    return () => clearInterval(intervalId);
+  }, [selectedWabaUser?.mobileNo, btnOption, selectedAgent, convoDetails]);
+
+  useEffect(() => {
+    setChatState((prev) => ({ ...prev, active: null, allConversations: [] }));
+  }, [selectedWabaUser?.mobileNo, btnOption]);
+
+  async function handleFetchAllTemplates() {
+    if (!selectedWabaUser?.mobileNo) {
+      return;
+    }
+    try {
+      const res = await getWabaTemplateDetails(selectedWabaUser?.mobileNo);
+      const approvedTemplateList = res.filter(
+        (template) => template.status === "APPROVED",
+      );
+      setAllTemplated(approvedTemplateList);
+    } catch (e) {
+      // console.log(e);
+      return toast.error("Error fetching all templates");
+    }
+  }
+  useEffect(() => {
+    handleFetchAllTemplates();
+  }, [sendMessageDialogVisible === true]);
+
+  // const handleFileChange = async (e) => {
+  //   const files = e.target.files[0];
+  //   const type = files?.type?.split("/")[0];
+  //   const fileName = files?.name;
+  //   const size = `${files?.size / 1024 / 1024}MB`;
+
+  //   if (parseFloat(size) > 5) {
+  //     toast.error("File size should be less than 5MB");
+  //     fileInputRef.current.value = "";
+  //     return;
+  //   }
+  //   setSelectedImage({ files, type, fileName, size });
+  //   // setSelectedImage(files);
+  //   setIsSpeedDialOpen(false);
+  // };
+
+  const handleFileChange = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    let mime = file.type;
+    const fileName = file.name;
+    const type = mime.split("/")[0];
+    const sizeMB = file.size / 1024 / 1024;
+
+    // special handling for stickers
+    if (mime === "image/webp") {
+      mime = detectStickerType(file);
+    }
+
+    const maxSize = FILE_SIZE_RULES[mime];
+
+    if (!maxSize) {
+      toast.error("Unsupported file type");
+      fileInputRef.current.value = "";
+      return;
+    }
+
+    if (sizeMB > maxSize) {
+      toast.error(`File exceeds max size of ${maxSize}MB`);
+      fileInputRef.current.value = "";
+      return;
+    }
+
+    // PASS: Store file
+    setSelectedImage({
+      files: file,
+      type,
+      fileName,
+      size: `${sizeMB.toFixed(2)}MB`,
+    });
+
+    setIsSpeedDialOpen(false);
+  };
+
+  const formatDate = (dateString) => {
+    if (!dateString) return "Unknown";
+    const date = new Date(dateString);
+    const day = String(date.getDate()).padStart(2, "0");
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const year = String(date.getFullYear()).slice(-2);
+    return `${day}/${month}/${year}`;
+  };
+
+  async function handleIsView() {
+    if (!selectedWabaUser?.mobileNo) return;
+    if (!chatState?.active) return;
+    if (!latestMessageData?.srno) return;
+    try {
+      const data = {
+        mobile: chatState?.active.mobileNo,
+        waba: selectedWabaUser?.mobileNo,
+        srno: latestMessageData.srno,
+        unreadFlag: 0,
+      };
+      await readMessage(data);
+    } catch (e) {
+      console.log(e);
+    }
+  }
+  useEffect(() => {
+    handleIsView();
+    // handleLoadNewChat();
+    const intervalId = setInterval(() => {
+      handleLoadNewChat();
+      // handleIsView();
+    }, 5000);
+    return () => clearInterval(intervalId);
+  }, [latestMessageData]);
+
+  async function handleFetchSpecificConversation(
+    olderChatFetch = false,
+    isLoading = false,
+  ) {
+    // if (!chatIndex) return;
+    if (isLoading) {
+      setChatLoading(true);
+    }
+    const payload = {
+      mobileNo: chatState?.active?.mobileNo,
+      wabaMobile: chatState?.active?.wabaNumber,
+      chatNo: chatIndex,
+    };
+
+    try {
+      const res = await fetchSpecificConversations(payload);
+
+      const filteredData = (res?.conversationEntityList || [])
+        .filter((item) => item.requestJson && item.templateName)
+        .map((item) => ({
+          templateName: item.templateName,
+          requestJson: item.requestJson,
+        }));
+
+      const messages = [...(res?.conversationEntityList || [])].reverse();
+
+      if (!olderChatFetch) {
+        setLatestMessageData({
+          srno: res?.conversationEntityList[0]?.srno,
+          replayTime: res?.conversationEntityList[0]?.replyTime,
+        });
+      }
+
+      const enrichedMessages = await Promise.all(
+        messages.map(async (msg) => {
+          let mediaPath = null;
+          let replyMessage = null;
+          let isReply = false;
+          let mediaSize = null;
+
+          if (msg?.contextReceiptNo) {
+            const data = {
+              wabaNumber: msg?.wabaNumber,
+              receiptNo: msg?.contextReceiptNo,
+            };
+            const res = await fetchReplyData(data);
+            replyMessage = res?.messageBody;
+            isReply = true;
+          }
+
+          if (msg.isReceived && msg?.replyType === "image") {
+            try {
+              mediaPath = await downloadAttachment({
+                waba: selectedWabaUser?.mobileNo,
+                id: msg.mediaId,
+                conversionSrno: msg.srno,
+              });
+            } catch (err) {
+              toast.error(`Failed to fetch media for srno ${msg.srno}`, err);
+            }
+          }
+
+          mediaPath = msg.mediaPath;
+          return {
+            ...msg,
+            date: dayjs(msg.replyTime).format("YYYY-MM-DD"),
+            mediaPath,
+            replyMessage,
+            isReply,
+            // mediaPath: mediaPath?.msg || "/default-avatar.jpg",
+          };
+        }),
+      );
+
+      // Group messages by date
+      const grouped = enrichedMessages.reduce((acc, msg) => {
+        if (!acc[msg.date]) {
+          acc[msg.date] = [];
+        }
+        acc[msg.date].push(msg);
+        return acc;
+      }, {});
+
+      const groupedArray = Object.entries(grouped).map(([date, messages]) => ({
+        date,
+        messages,
+      }));
+
+      // setSpecificConversation(groupedArray);
+      setChatState((prev) => ({
+        ...prev,
+        specificConversation: groupedArray,
+      }));
+
+      setLatestMessageData({
+        srno: res?.conversationEntityList[0]?.srno,
+        replayTime: res?.conversationEntityList[0]?.replyTime,
+      });
+
+      // setChatData
+    } catch (e) {
+      toast.error("Error fetching specific conversation");
+    } finally {
+      setChatLoading(false);
+    }
+  }
+
+  // useEffect(() => {
+  //   handleFetchSpecificConversation(true);
+  // }, [chatIndex]);
+
+  // useEffect(() => {
+  //   if (messageRef.current) {
+  //     messageRef.current.scrollTop = messageRef.current.scrollHeight;
+  //   }
+  // }, [chatState?.active, specificConversation]);
+
+  useEffect(() => {
+    if (!chatState?.active?.mobileNo) return;
+
+    if (chatState?.active?.mobileNo) {
+      handleFetchSpecificConversation(true, true);
+    }
+  }, [chatState?.active?.mobileNo, chatIndex]);
+
+  async function handleFetchAllAgent() {
+    try {
+      const res = await getAgentList();
+      setAgentList(res);
+    } catch (e) {
+      // console.log(e);
+    }
+  }
+
+  useEffect(() => {
+    if (user?.role !== "AGENT") {
+      handleFetchAllAgent();
+    }
+  }, [user?.role]);
+
+  useEffect(() => {
+    async function handleFetchAllGroup() {
+      try {
+        const res = await getWabaShowGroupsList();
+        setGroupList(res);
+      } catch (e) {
+        // console.log(e);
+      }
+    }
+
+    handleFetchAllGroup();
+  }, []);
+
+  async function handleAssignAgent() {
+    if (!selectedAgentList) {
+      return toast.error("Please select agent");
+    }
+    // if (!agentName) {
+    //   return toast.error("Please select agent display name");
+    // }
+    if (!selectedGroupList) {
+      return toast.error("Please select group");
+    }
+    if (!chatState?.active.mobileNo) {
+      return toast.error("Please select chat first");
+    }
+
+    const data = {
+      waba: selectedWabaUser?.mobileNo,
+      name: agentName,
+      agentSrno: selectedAgentList,
+      groupNo: selectedGroupList,
+      mobileNo: chatState?.active.mobileNo,
+    };
+
+    try {
+      setIsFetching(true);
+      const res = await assignUserToAgent(data);
+      if (res.message.includes("Successfully")) {
+        toast.success("Agent assigned successfully.");
+        setDialogVisible(false);
+        setSelectedAgentList("");
+        setSelectedGroupList("");
+        setAgentname("");
+      }
+    } catch (e) {
+      // console.log(e);
+      toast.error("Something went wrong. Please try again.");
+    } finally {
+      setIsFetching(false);
+    }
+  }
+
+  async function handlesendMessage() {
+    if (!chatState?.active) {
+      return toast.error("Please select chat first");
+    }
+
+    if (messageType === "text" && !sendmessageData.message) {
+      return toast.error("Please enter message");
+    }
+
+    let data = {};
+    let func = "";
+    if (messageType === "text") {
+      data = {
+        mobile: chatState?.active.mobileNo,
+        wabaNumber: selectedWabaUser?.mobileNo,
+        srno: chatState?.active.srno,
+        message: sendmessageData.message,
+        contactName: chatState?.active?.contectName || "",
+        replyType: "text",
+        replyFrom: "user",
+        wabaSrNo: selectedWabaUser?.wabaSrno,
+      };
+      func = sendMessageToUser;
+    } else if (messageType === "template") {
+      const templateType = allTemplated.find(
+        (temp) => temp.vendorTemplateId === sendmessageData?.templateName,
+      );
+
+      if (
+        ["image", "video", "document"].includes(templateType?.type) &&
+        !selectedFile?.fileUrl
+      ) {
+        return toast.error("Please Select Media first");
+      }
+
+      const allvariables = [];
+
+      if (varLength && varLength[0]?.length > 0) {
+        // const validKeys = variables?.filter(
+        //   (key) => key !== "" || key !== null
+        // );
+
+        const validKeys = Object.keys(variables).filter(
+          (key) => variables[key] !== "",
+        );
+
+        if (varLength[0]?.length != validKeys.length) {
+          return toast.error("Please enter all variables");
+        }
+        // return;
+        validKeys.forEach((key) => {
+          allvariables.push(variables[key]);
+        });
+      }
+
+      let imgCard = [];
+
+      let isError = false;
+
+      const isCaroual = templateDetails?.components?.find(
+        (item) => item?.type === "CAROUSEL",
+      )?.type;
+
+      if (isCaroual) {
+        Object.keys(carFile).forEach((key) => {
+          if (!carFile[key].filePath) {
+            toast.error(`Please upload a file for Card ${key + 1}.`);
+            isError = true;
+            return;
+          }
+          const filePath = carFile[key].filePath;
+          imgCard.push(filePath);
+        });
+
+        if (isError) {
+          return;
+        }
+      }
+
+      if (btnVarLength?.length > 0 && !btnVariables) {
+        return toast.error("Please enter Button variables");
+      }
+
+      const templateName = allTemplated.find(
+        (temp) => temp.vendorTemplateId === sendmessageData?.templateName,
+      )?.templateName;
+
+      data = {
+        srno: chatState?.active.srno,
+        templateUrlVariable: btnVariables,
+        templateType: templateType?.type,
+        // templateName: sendmessageData?.templateName,
+        templateName: templateName,
+        // templateLanguage: "en",
+        templateLanguage: templateDetails?.language,
+        wabaNumber: selectedWabaUser?.mobileNo,
+        mobileno: chatState?.active.mobileNo,
+        contactName: chatState?.active?.contectName || "",
+        msgType: "template",
+        variables: allvariables,
+        mediaUrl: selectedFile?.fileUrl || "",
+        // phoneDisplay: "",
+        wabaSrNo: selectedWabaUser.wabaSrno,
+        agentsrno: "",
+        imgCard: imgCard,
+        phoneDisplay: chatState?.active.mobileNo,
+        // isShortUrl: templateTypeIsShort
+      };
+      func = sendTemplateMessageToUser;
+    } else {
+      return toast.error("Please select valid messageType");
+    }
+
+    try {
+      setIsFetching(true);
+      setIsSendingTemplate(true);
+      console.log(data);
+      // return
+      const res = await func(data);
+      if (
+        res?.msg?.includes("successfully") ||
+        res?.msg?.includes("Successfully")
+      ) {
+        toast.success("Message sent successfully.");
+        setSendMessageDialogVisible(false);
+        setSendMessageData({});
+        setVariables([]);
+        setVarLength(0);
+        setTemplateDetails("");
+        setSelectedFile(null);
+        return;
+      }
+    } catch (e) {
+      toast.error(
+        e?.msg ||
+          e?.response?.data?.msg ||
+          "Something went wrong. Please try again.",
+      );
+    } finally {
+      setIsFetching(false);
+      setIsSendingTemplate(false);
+    }
+  }
+
+  async function handlefetchTemplateDetails() {
+    if (!sendmessageData?.templateName) {
+      return;
+    }
+
+    setFetchTemplate(true);
+    try {
+      const res = await getTemplateDetialsById(sendmessageData?.templateName);
+      setTemplateDetails(res);
+    } catch (e) {
+      // console.log(e);
+      return toast.error("Error fetching template details");
+    } finally {
+      setFetchTemplate(false);
+    }
+  }
+  useEffect(() => {
+    handlefetchTemplateDetails();
+  }, [sendmessageData?.templateName, setSendMessageData]);
+
+  function formatTime(dateString) {
+    const date = new Date(dateString.replace(" ", "T"));
+
+    const options = {
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true,
+    };
+
+    const timeAMPM = date.toLocaleTimeString("en-US", options);
+    return timeAMPM;
+  }
+
+  function fetchVaribles() {
+    if (!templateDetails) return;
+
+    templateDetails?.components?.map((item) => {
+      if (item?.type === "BODY") {
+        setVarLength(item?.example?.body_text);
+      }
+      if (item?.type === "BUTTONS") {
+        // item?.buttons?.map(({ type, example }) => {
+        //   if (type === "URL") {
+        //     // const regex = /{{(\d+)}}/g;
+        //     // const matches = regex.exec(example);
+        //     // setBtnVarLength(matches);
+        //     setBtnVarLength(example);
+        //   }
+        // });
+        item?.buttons?.map(({ type, example, url }) => {
+          if (type === "URL") {
+            // const varLength = url?.match(/{{(.*?)}}/g);
+            // const extractedVars = varLength?.map(match => match.replace(/{{|}}/g, ''));
+            // const totalLength = extractedVars?.reduce((sum, item) => sum + (parseInt(item) || 0), 0);
+            // setBtnVarLength(totalLength || 0);
+            let totalLength = 0;
+
+            item?.buttons?.forEach(({ type, url }) => {
+              if (type === "URL" && url) {
+                // Check for URL type and valid URL
+                const varLength = url?.match(/{{(.*?)}}/g); // Extract variables inside {{}}
+                const extractedVars = varLength?.map((match) =>
+                  match.replace(/{{|}}/g, ""),
+                );
+
+                // Add the number of variables to totalLength
+                totalLength += extractedVars?.length || 0;
+              }
+            });
+            setBtnVarLength(totalLength || 0);
+          }
+        });
+      }
+    });
+  }
+
+  useEffect(() => {
+    fetchVaribles();
+  }, [templateDetails]);
+
+  async function handleLoadNewChat() {
+    if (!selectedWabaUser?.mobileNo || !chatState?.active) return;
+    if (!latestMessageData.srno) return;
+
+    try {
+      const data = {
+        mobile: chatState?.active.mobileNo,
+        wabaNumber: selectedWabaUser?.mobileNo,
+        ...latestMessageData,
+        replayTime: moment(latestMessageData.replayTime).format(
+          "YYYY-MM-DD HH:mm:ss",
+        ),
+      };
+      const res = await loadNewChat(data);
+
+      if (res?.conversationEntityList.length === 0) {
+        return;
+      }
+
+      if (chatIndex > 1) {
+        return;
+      }
+      await handleFetchSpecificConversation();
+    } catch (e) {
+      oast.error("Error loading new chat");
+    }
+  }
+  // async function handleIsView() {
+  //   if (!wabaState.selectedWaba) return;
+  //   if (!chatState?.active) return;
+  //   if (!latestMessageData?.srno) return;
+  //   try {
+  //     const data = {
+  //       mobile: chatState?.active.mobileNo,
+  //       waba: wabaState?.selectedWaba,
+  //       srno: latestMessageData.srno,
+  //       unreadFlag: 0,
+  //     };
+  //     await readMessage(data);
+  //   } catch (e) {
+  //     console.log(e);
+  //   }
+  // }
+  // useEffect(() => {
+  //   handleLoadNewChat();
+  //   handleIsView();
+  //   const intervalId = setInterval(() => {
+  //     handleLoadNewChat();
+  //     handleIsView();
+  //   }, 5000);
+  //   return () => clearInterval(intervalId);
+  // }, [latestMessageData]);
+
+  async function handleAttachmentDownload(data) {
+    try {
+      const mediaPath = await downloadAttachment({
+        waba: selectedWabaUser?.mobileNo,
+        id: data.mediaId,
+        conversionSrno: data.srno,
+      });
+      await handleFetchSpecificConversation();
+    } catch (e) {
+      // console.log(e);
+      toast.error("Error downloading attachment");
+    }
+  }
+
+  // const chatScreenVariants = {
+  //   hidden: { opacity: 0, x: "100%" },
+  //   visible: {
+  //     opacity: 1,
+  //     x: 0, // Slide into view
+  //     transition: {
+  //       type: "spring",
+  //       stiffness: 300,
+  //       damping: 20,
+  //     },
+  //   },
+  //   exit: {
+  //     opacity: 0,
+  //     x: "100%",
+  //     transition: {
+  //       duration: 0.3,
+  //     },
+  //   },
+  // };
+
+  const chatScreenVariants = {
+    hidden: { opacity: 0, filter: "blur(10px)" },
+    visible: {
+      opacity: 1,
+      filter: "blur(0px)",
+      transition: {
+        duration: 0.6,
+        ease: "easeOut",
+      },
+    },
+    exit: {
+      opacity: 0,
+      filter: "blur(10px)",
+      transition: {
+        duration: 0.3,
+        ease: "easeIn",
+      },
+    },
+  };
+
+  const [isSmallScreen, setIsSmallScreen] = useState(false);
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia("(max-width: 768px)");
+
+    const handleResize = (e) => {
+      setIsSmallScreen(e.matches);
+    };
+
+    // Set initial state
+    setIsSmallScreen(mediaQuery.matches);
+
+    // Add listener
+    mediaQuery.addEventListener("change", handleResize);
+
+    // Cleanup
+    return () => mediaQuery.removeEventListener("change", handleResize);
+  }, []);
+
+  const getLocation = () => {
+    try {
+      if (!navigator.geolocation) {
+        toast.error("Geolocation is not supported by your browser");
+        return;
+      }
+
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          setLocationData({
+            lat: position.coords.latitude,
+            lon: position.coords.longitude,
+          });
+          // setError(null);
+        },
+        (err) => {
+          toast.error(err.message);
+        },
+      );
+    } catch (e) {
+      toast.error("Error getting location");
+    }
+  };
+
+  async function requestLocationData() {
+    try {
+      const payload = {
+        mobile: chatState?.active.mobileNo,
+        wabaNumber: selectedWabaUser?.mobileNo,
+        srno: chatState?.active.srno,
+        contactName: chatState?.active?.contectName || "",
+        replyType: "location_request_message",
+        replyFrom: "user",
+        wabaSrNo: selectedWabaUser.wabaSrno,
+      };
+
+      const body = {
+        messaging_product: "whatsapp",
+        recipient_type: "individual",
+        type: "interactive",
+        to: chatState?.active.mobileNo,
+        interactive: {
+          type: "location_request_message",
+          body: {
+            text: locationPreviewText,
+          },
+          action: {
+            name: "send_location",
+          },
+        },
+      };
+
+      const res = await sendInputMessageToUser(payload, body);
+
+      if (res?.status !== "success") {
+        toast.error("Error getting location");
+        return;
+      }
+
+      toast.success("Location request sent successfully");
+      setLocationPreview(false);
+      setLocationPreviewText("Do you want to share your location");
+    } catch (e) {
+      toast.error("Error getting location");
+    }
+  }
+
+  async function handleUnread(data) {
+    if (!selectedWabaUser?.mobileNo) return;
+    try {
+      const payload = {
+        mobile: data?.mobileNo,
+        waba: selectedWabaUser?.mobileNo,
+        srno: data?.srno,
+        unreadFlag: data?.srno,
+      };
+      await readMessage(payload);
+      toast.success("Chat Unread");
+    } catch (e) {
+      toast.error("Error viewing message");
+    }
+  }
+
+  return (
+    <div className="flex h-full bg-gray-50 rounded-2xl overflow-hidden border">
+      <div
+        className={`w-full md:w-100 p-1 border rounded-tl-2xl overflow-hidden border-tl-lg  ${
+          chatState?.active ? "hidden md:block" : "block"
+        }`}
+      >
+        <InputData
+          setSearch={setSearch}
+          search={search}
+          handleSearch={handleSearch}
+          btnOption={btnOption}
+          setBtnOption={setBtnOption}
+          // wabaState={wabaState}
+          // setWabaState={setWabaState}
+          setChatState={setChatState}
+          setSelectedWaba={setSelectedWaba}
+          setSelectedAgent={setSelectedAgent}
+          selectedAgent={selectedAgent}
+          agentList={agentList}
+          chatState={chatState}
+        />
+
+        <ChatSidebar
+          formatDate={formatDate}
+          chatData={chatData}
+          chatState={chatState}
+          setChatState={setChatState}
+          setChatData={setChatData}
+          setSelectedAgentList={setSelectedAgentList}
+          selectedWaba={selectedWaba}
+          setSelectedGroupList={setSelectedGroupList}
+          isLoading={isFetching}
+          setChatIndex={setChatIndex}
+          handleUnread={handleUnread}
+          handleFetchAllConvoRepeat={handleFetchAllConvoRepeat}
+          handleIsView={handleIsView}
+          // wabaState={wabaState}
+        />
+      </div>
+
+      <AnimatePresence mode="wait">
+        {!chatState.active && !isSmallScreen && (
+          <motion.div
+            key="empty-chat"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="relative flex flex-col items-center justify-center bg-gradient-to-br from-green-50 via-white to-green-100 border flex-1 border-tr-lg "
+          >
+            {/* Background Animation - Floating Bubbles */}
+            <div className="absolute inset-0 overflow-hidden z-0 pointer-events-none ">
+              <motion.div
+                initial={{ y: 200 }}
+                animate={{ y: -100 }}
+                transition={{
+                  duration: 10,
+                  repeat: Infinity,
+                  repeatType: "mirror",
+                  ease: "easeInOut",
+                }}
+                className="absolute left-10 top-10 w-64 h-64 bg-green-200 opacity-30 rounded-full"
+              />
+              <motion.div
+                initial={{ x: -100 }}
+                animate={{ x: 100 }}
+                transition={{
+                  duration: 8,
+                  repeat: Infinity,
+                  repeatType: "mirror",
+                  ease: "easeInOut",
+                }}
+                className="absolute bottom-10 right-10 w-48 h-48 bg-green-300 opacity-30 rounded-full"
+              />
+            </div>
+
+            {/* main card */}
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ duration: 0.3, ease: "easeOut" }}
+              className="relative z-10 px-6 py-10 bg-white/80 backdrop-blur-xl rounded-2xl shadow-lg text-center max-w-xl"
+            >
+              <div className="w-50 h-50 mx-auto mb-3">
+                <lottie-player
+                  autoplay
+                  loop
+                  mode="normal"
+                  src="/animation/wabalivechatanimation.json"
+                  s
+                  style={{ width: "100%", height: "100%" }}
+                ></lottie-player>
+              </div>
+              <motion.h2
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3 }}
+                className="text-3xl font-semibold text-green-900 mb-2"
+              >
+                Welcome to LiveChat!
+              </motion.h2>
+              {/* <motion.h3
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3 }}
+                className="text-xl text-green-900 mb-4"
+              >
+                Select Your WABA Account to Start a Conversation
+              </motion.h3> */}
+              <motion.p
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3 }}
+                className="text-gray-600"
+              >
+                Engage your customers instantly with real-time WhatsApp
+                messaging. Choose a WABA account to get started.
+              </motion.p>
+            </motion.div>
+          </motion.div>
+        )}
+
+        {chatState.active && (
+          <motion.div
+            key="chat-screen"
+            variants={chatScreenVariants}
+            initial="hidden"
+            animate="visible"
+            exit="exit"
+            className="relative flex flex-col flex-1 h-screen md:h-full transition-all w-full duration-200"
+          >
+            <ChatScreen
+              setVisibleRight={setVisibleRight}
+              setDialogVisible={setDialogVisible}
+              messageRef={messageRef}
+              formatTime={formatTime}
+              btnOption={btnOption}
+              selectedImage={selectedImage}
+              deleteImages={deleteImages}
+              handleAttachmentDownload={handleAttachmentDownload}
+              insertEmoji={insertEmoji}
+              inputRef={inputRef}
+              sendMessage={sendMessage}
+              items={items}
+              visibleRight={visibleRight}
+              input={input}
+              setInput={setInput}
+              setSendMessageDialogVisible={setSendMessageDialogVisible}
+              setChatState={setChatState}
+              chatState={chatState}
+              setChatIndex={setChatIndex}
+              chatIndex={chatIndex}
+              handleFetchSpecificConversation={handleFetchSpecificConversation}
+              chatLoading={chatLoading}
+              isSpeedDialOpen={isSpeedDialOpen}
+              setIsSpeedDialOpen={setIsSpeedDialOpen}
+              // specificConversation={specificConversation}
+              locationPreview={locationPreview}
+              setLocationPreview={setLocationPreview}
+              locationPreviewText={locationPreviewText}
+              setLocationPreviewText={setLocationPreviewText}
+              requestLocationData={requestLocationData}
+              aiResponses={aiResponses}
+              setAiResponses={setAiResponses}
+              isMessageSending={isMessageSending}
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {user.role !== "AGENT" && (
+        <Dialog
+          header="Transfer Chat to Agent"
+          visible={dialogVisible}
+          style={{ width: "35rem" }}
+          draggable={false}
+          onHide={() => {
+            if (!dialogVisible) return;
+            setDialogVisible(false);
+          }}
+        >
+          <div className="space-y-3">
+            <AnimatedDropdown
+              options={agentList?.data?.map((agent) => ({
+                value: agent.sr_no,
+                label: agent.name,
+              }))}
+              id="agentList"
+              name="agentList"
+              label="Agent List"
+              tooltipContent="Select Agent"
+              tooltipPlacement="right"
+              value={selectedAgentList}
+              onChange={(value) => setSelectedAgentList(value)}
+              placeholder="Agent List"
+            />
+
+            {/* <InputField
+            label="Agent Display Name"
+            tooltipContent="Enter Agent Name"
+            id="agentname"
+            name="agentname"
+            type="tel"
+            value={agentName}
+            onChange={(e) => setAgentname(e.target.value)}
+            placeholder="Enter Agent Display Name"
+          /> */}
+            <AnimatedDropdown
+              options={groupList?.map((group) => ({
+                value: group.groupCode,
+                label: group.groupName,
+              }))}
+              id="group"
+              name="group"
+              label="Group"
+              tooltipContent="Select Group"
+              tooltipPlacement="right"
+              value={selectedGroupList}
+              onChange={(value) => setSelectedGroupList(value)}
+              placeholder="Group"
+            />
+
+            <div className="flex items-center justify-center">
+              <UniversalButton
+                id={"assignAgent"}
+                name={"assignAgent"}
+                label="Assign Agent"
+                onClick={handleAssignAgent}
+              />
+            </div>
+          </div>
+        </Dialog>
+      )}
+
+      <Dialog
+        header="Send Template to User"
+        visible={sendMessageDialogVisible}
+        style={{ width: "65rem", height: "50rem" }}
+        draggable={false}
+        onHide={() => {
+          setSendMessageDialogVisible(false);
+          setTemplateType(templateType);
+          setBtnVarLength(0);
+          setVarLength(0);
+          setVariables({});
+          setBtnVariables("");
+          setTemplateDetails({});
+          setSendMessageData({});
+        }}
+      >
+        <div className="flex flex-col justify-between h-full gap-4 p-2 md:flex-row">
+          <div className="flex flex-col w-100 gap-5">
+            {/* <div className="flex gap-2">
+              <div className="flex gap-2">
+                <RadioButton
+                  inputId="mesageTemplateType"
+                  name="mesageTemplateType"
+                  value="template"
+                  onChange={(e) => {
+                    setMessageType(e.target.value);
+                    setSendMessageData({});
+                    setTemplateDetails("");
+                  }}
+                  checked={messageType === "template"}
+                />
+                <label
+                  htmlFor="mesageTemplateType"
+                  className="text-sm font-medium text-gray-700 cursor-pointer"
+                >
+                  Template
+                </label>
+              </div>
+              <div className="flex items-center gap-2">
+                <RadioButton
+                  inputId="mesageTextType"
+                  name="mesageTextType"
+                  value="text"
+                  onChange={(e) => {
+                    setMessageType(e.target.value);
+                    setSendMessageData({});
+                    setTemplateDetails("");
+                  }}
+                  checked={messageType === "text"}
+                />
+                <label
+                  htmlFor="mesageTextType"
+                  className="text-sm font-medium text-gray-700 cursor-pointer"
+                >
+                  Custom Message
+                </label>
+              </div>
+            </div> */}
+            <div>
+              {messageType === "template" ? (
+                <div className="flex flex-col gap-3">
+                  <DropdownWithSearch
+                    id="selectTemplate"
+                    name="selectTemplate"
+                    label="Select Template"
+                    placeholder="Select Template"
+                    options={allTemplated
+                      ?.filter((temp) => temp.type !== "carousel")
+                      .map((template) => ({
+                        value: template.vendorTemplateId,
+                        label: template.templateName,
+                      }))}
+                    value={sendmessageData.templateName}
+                    onChange={(e) => {
+                      setSendMessageData((prevData) => ({
+                        ...prevData,
+                        templateName: e,
+                      }));
+                      const templateType = allTemplated?.find(
+                        (template) => template.vendorTemplateId === e,
+                      )?.type;
+                      const templateisShort = allTemplated?.find(
+                        (template) => template.vendorTemplateId === e,
+                      )?.shortUrl;
+                      setTemplateTypeIsShort(templateisShort);
+                      setTemplateType(templateType);
+                      setBtnVarLength(0);
+                      setVarLength(0);
+                      setVariables({});
+                      setBtnVariables("");
+                      setTemplateDetails("");
+                    }}
+                  />
+
+                  <Variables
+                    templateTypeIsShort={templateTypeIsShort}
+                    templateType={templateType}
+                    selectedFile={selectedFile}
+                    setSelectedFile={setSelectedFile}
+                    varLength={varLength}
+                    setVariables={setVariables}
+                    variables={variables}
+                    btnVariables={btnVariables}
+                    btnVarLength={btnVarLength}
+                    setBtnVariables={setBtnVariables}
+                    setCarFile={setCarFile}
+                    carFile={carFile}
+                    cardIndex={cardIndex}
+                    setCardIndex={setCardIndex}
+                    handleNextCard={handleNextCard}
+                    handlePreviousCard={handlePreviousCard}
+                    tempDetails={templateDetails}
+                  />
+                </div>
+              ) : null}
+              {/* (
+                <div>
+                  <InputField
+                    label="Enter Message"
+                    value={sendmessageData.message}
+                    placeholder="Enter Message..."
+                    onChange={(e) => {
+                      setSendMessageData((prevData) => ({
+                        ...prevData,
+                        message: e.target.value,
+                      }));
+                    }}
+                  />
+                </div>
+              ) */}
+            </div>
+            <div className="flex justify-center p-4 absolute bottom-0 left-0 w-full bg-white">
+              <UniversalButton
+                label={isSendingTemplate ? "Sending..." : "Send Template"}
+                onClick={handlesendMessage}
+                disabled={isSendingTemplate}
+              />
+            </div>
+          </div>
+          <div>
+            {/* {fetchTemplate ? (
+              <div className="flex items-center justify-center w-100 h-full">Loading Template...</div>
+            ) : ( */}
+            <TemplatePreview
+              tempDetails={templateDetails}
+              messageType={messageType}
+              sendmessageData={sendmessageData}
+              selectedImage={selectedFile}
+              carFile={carFile}
+              cardIndex={cardIndex}
+              setCardIndex={setCardIndex}
+            />
+            {/* // )} */}
+          </div>
+        </div>
+      </Dialog>
+      {/* 
+      <input
+        type="file"
+        ref={fileInputRef}
+        style={{ display: "none" }}
+        onChange={handleFileChange}
+        accept="image/* video/* audio/*"
+      // multiple
+      /> */}
+
+      <input
+        type="file"
+        ref={fileInputRef}
+        style={{ display: "none" }}
+        onChange={handleFileChange}
+        accept="
+    image/jpeg,
+    image/png,
+    image/webp,
+    video/3gpp,
+    video/mp4,
+    audio/aac,
+    audio/amr,
+    audio/mpeg,
+    audio/mp4,
+    audio/ogg,
+    text/plain,
+    application/pdf,
+    application/msword,
+    application/vnd.ms-excel,
+    application/vnd.ms-powerpoint,
+    application/vnd.openxmlformats-officedocument.wordprocessingml.document,
+    application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,
+    application/vnd.openxmlformats-officedocument.presentationml.presentation
+  "
+      />
+
+      {imagePreviewVisible && (
+        <ImagePreview
+          imagePreviewVisible={imagePreviewVisible}
+          setImagePreviewVisible={setImagePreviewVisible}
+          images={[selectedImage]}
+        />
+      )}
+    </div>
+  );
+}

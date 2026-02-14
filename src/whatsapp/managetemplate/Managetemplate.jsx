@@ -1,0 +1,1381 @@
+// import React from "react";
+// import { useEffect, useState } from "react";
+// import { useNavigate } from "react-router-dom";
+// import Box from "@mui/material/Box";
+// import Tabs from "@mui/material/Tabs";
+// import Tab from "@mui/material/Tab";
+// import toast from "react-hot-toast";
+// import Grid from "@mui/material/Grid";
+// import Paper from "@mui/material/Paper";
+// import FormControl from "@mui/material/FormControl";
+// import Radio from "@mui/material/Radio";
+// import FormLabel from "@mui/material/FormLabel";
+// import RadioGroup from "@mui/material/RadioGroup";
+// import Typography from "@mui/material/Typography";
+// import FormControlLabel from "@mui/material/FormControlLabel";
+// import "../style.css";
+// import { BreadCrumb } from "primereact/breadcrumb";
+// import { RadioButton } from "primereact/radiobutton";
+// import { Dialog } from "primereact/dialog";
+// import moment from "moment";
+
+
+
+
+// // ICONS
+// import { IoSearch } from "react-icons/io5";
+// import GradingOutlinedIcon from "@mui/icons-material/GradingOutlined";
+// import LibraryBooksOutlinedIcon from "@mui/icons-material/LibraryBooksOutlined";
+// import KeyboardArrowDownOutlinedIcon from "@mui/icons-material/KeyboardArrowDownOutlined";
+// import HealthAndSafetyOutlinedIcon from "@mui/icons-material/HealthAndSafetyOutlined";
+// import LocalShippingOutlinedIcon from "@mui/icons-material/LocalShippingOutlined";
+// import StorefrontOutlinedIcon from "@mui/icons-material/StorefrontOutlined";
+// import WorkOutlineOutlinedIcon from "@mui/icons-material/WorkOutlineOutlined";
+// import MovieFilterOutlinedIcon from "@mui/icons-material/MovieFilterOutlined";
+// import PublicOutlinedIcon from "@mui/icons-material/PublicOutlined";
+// import RestaurantOutlinedIcon from "@mui/icons-material/RestaurantOutlined";
+// import HouseOutlinedIcon from "@mui/icons-material/HouseOutlined";
+// import SettingsOutlinedIcon from "@mui/icons-material/SettingsOutlined";
+// import ScienceOutlinedIcon from "@mui/icons-material/ScienceOutlined";
+// import ExploreOutlinedIcon from "@mui/icons-material/ExploreOutlined";
+// import SyncOutlinedIcon from "@mui/icons-material/SyncOutlined";
+// import AddOutlinedIcon from "@mui/icons-material/AddOutlined";
+// import KeyboardArrowRightOutlinedIcon from "@mui/icons-material/KeyboardArrowRightOutlined";
+// import ArrowForwardIosOutlinedIcon from "@mui/icons-material/ArrowForwardIosOutlined";
+// import HdrStrongOutlinedIcon from "@mui/icons-material/HdrStrongOutlined";
+// import ShoppingCartOutlinedIcon from "@mui/icons-material/ShoppingCartOutlined";
+// import AccountBalanceIcon from "@mui/icons-material/AccountBalance";
+// import CallIcon from "@mui/icons-material/Call";
+// import SupportAgentIcon from "@mui/icons-material/SupportAgent";
+// import EventIcon from "@mui/icons-material/Event";
+// import SellIcon from "@mui/icons-material/Sell";
+// import GroupsIcon from "@mui/icons-material/Groups";
+// import PermIdentityIcon from "@mui/icons-material/PermIdentity";
+// import LocalMallIcon from "@mui/icons-material/LocalMall";
+// import PaymentIcon from "@mui/icons-material/Payment";
+// import CardTravelOutlinedIcon from "@mui/icons-material/CardTravelOutlined";
+// import SchoolOutlinedIcon from "@mui/icons-material/SchoolOutlined";
+// import AccountBalanceOutlinedIcon from "@mui/icons-material/AccountBalanceOutlined";
+// import ShoppingCartIcon from "@mui/icons-material/ShoppingCart";
+
+
+
+// // APIS
+// import {
+//   getTemplateList,
+//   getWabaList,
+//   getWabaTemplate,
+//   getWabaTemplateDetails,
+//   syncStatus,
+// } from "@/apis/whatsapp/whatsapp.js";
+
+
+
+// // COMPONENTS
+// import DataTable from "./components/Datatable.jsx";
+// import AnimatedDropdown from "../components/AnimatedDropdown";
+// import InputField from "../components/InputField";
+// import UniversalDatePicker from "../components/UniversalDatePicker";
+// import UniversalButton from "../components/UniversalButton";
+// import UniversalSkeleton from "../components/UniversalSkeleton";
+// import Loader from "../components/Loader";
+// import { CustomTabPanel, a11yProps } from "./components/CustomTabPanel";
+// import DropdownWithSearch from "../components/DropdownWithSearch.jsx";
+// import TemplateLibrary from "./components/TemplateLibrary.jsx";
+// import { useWabaStore } from "../store/waba.store";
+
+
+// const ManageTemplate = () => {
+//   const navigate = useNavigate();
+//   const { selectedWaba } = useWabaStore();
+
+//   const [isLoading, setIsLoading] = useState(true);
+//   const [isFetching, setIsFetching] = useState(false);
+//   const [value, setValue] = useState(0);
+//   const [hasSearched, setHasSearched] = useState(false);
+
+//   const [selectedTemplate, setSelectedTemplate] = useState("");
+//   const [wabaAccountId, setWabaAccountId] = useState("");
+
+//   const [syncStatusVisible, setSyncStatusVisible] = useState(false);
+//   const [syncWabaId, setSyncWabaId] = useState(null);
+
+//   // Filters
+//   const [selectedDate, setSelectedDate] = useState(null);
+//   // const [selectedWaba, setSelectedWaba] = useState("");
+//   const [selectedCategory, setSelectedCategory] = useState("");
+//   const [selectedType, setSelectedType] = useState("");
+//   const [selectedStatus, setSelectedStatus] = useState("");
+//   const [templateName, setTemplateName] = useState("");
+
+//   // Data
+//   const [wabaList, setWabaList] = useState([]);
+//   const [filteredData, setFilteredData] = useState([]);
+
+//   // Library Filters
+//   const [selectedLibraryCategory, setSelectedLibraryCategory] = useState("");
+//   const [selectedIndustry, setSelectedIndustry] = useState("");
+
+//   const [showAllIndustries, setShowAllIndustries] = useState(false);
+
+//   const [searchActive, setSearchActive] = useState(false);
+
+//   const [templates, setTemplates] = useState([]);
+
+//   const [tempCount, setTempCount] = useState({
+//     authentication: 0,
+//     marketing: 0,
+//     utility: 0,
+//   });
+
+//   const [selectedOptionCategory, setSelectedOptionCategory] = useState("");
+
+
+
+//   const [industryCount, setIndustryCount] = useState({
+//     marketing: 0,
+//     utility: 0,
+//     authentication: 0,
+//     ecommerce: 0,
+//     financial: 0,
+//     education: 0,
+//     banking: 0,
+//     healthcare: 0,
+//     logistics: 0,
+//     retail: 0,
+//     corporate: 0,
+//     entertainment: 0,
+//     travel: 0,
+//     food: 0,
+//     real_estate: 0,
+//     manufacturing: 0,
+//     science: 0,
+//   });
+
+
+//   // useEffect(() => {
+//   //   async function handleFetch() {
+//   //     const res = await getTemplateList();
+
+//   //     const totalCount = {
+//   //       authentication: 0,
+//   //       marketing: 0,
+//   //       utility: 0,
+//   //     };
+
+//   //     res.forEach((item) => {
+//   //       if (item.category in totalCount) {
+//   //         totalCount[item.category] += 1;
+//   //       }
+//   //     });
+
+//   //     setTempCount(totalCount);
+//   //   }
+
+//   //   handleFetch();
+//   // }, []);
+
+//   // useEffect(() => {
+//   //   async function handleFetch() {
+//   //     const res = await getTemplateList({
+//   //       category: selectedOptionCategory,
+//   //     });
+
+//   //     const industryCount = {
+//   //       marketing: 0,
+//   //       utility: 0,
+//   //       authentication: 0,
+//   //       ecommerce: 0,
+//   //       financial: 0,
+//   //       education: 0,
+//   //       banking: 0,
+//   //       healthcare: 0,
+//   //       logistics: 0,
+//   //       retail: 0,
+//   //       corporate: 0,
+//   //       entertainment: 0,
+//   //       travel: 0,
+//   //       food: 0,
+//   //       real_estate: 0,
+//   //       manufacturing: 0,
+//   //       science: 0,
+//   //     };
+
+//   //     res.forEach((item) => {
+//   //       if (item.industry in industryCount) {
+//   //         industryCount[item.industry] += 1;
+//   //       }
+//   //     });
+
+//   //     setIndustryCount(industryCount);
+//   //   }
+
+//   //   handleFetch();
+//   // }, [selectedOptionCategory]);
+
+//   // Dynamic template counts (Replace this with API data)
+//   const templateCounts = {
+//     ...industryCount,
+//   };
+
+//   const handleViewTemplate = (data) => {
+//     setViewTemplate(true);
+//     setTemplateDetails(data);
+//   };
+
+//   // Reset filters when WABA changes
+//   // useEffect(() => {
+//   //   setTemplateName("");
+//   //   setSelectedCategory("");
+//   //   setSelectedType("");
+//   //   setSelectedStatus("");
+//   //   setSelectedDate(null);
+//   //   setFilteredData([]);
+//   //   setHasSearched(false);
+//   // }, [selectedWaba]);
+
+//   // useEffect(() => {
+//   //   async function handleFetchAllTemplates() {
+//   //     const data = {
+//   //       category: selectedOptionCategory,
+//   //       industry: selectedOptionIndustry,
+//   //     };
+//   //     try {
+//   //       const res = await getTemplateList(data);
+//   //       setTemplates(res);
+//   //     } catch (e) {
+//   //       toast.error("Failed to fetch templates.");
+//   //     }
+//   //   }
+//   //   handleFetchAllTemplates();
+//   // }, [selectedOptionCategory, selectedOptionIndustry]);
+
+//   const handleChange = (event, newValue) => {
+//     setValue(newValue);
+//   };
+
+//   const handleInputChange = (e) => {
+//     const newValue = e.target.value.replace(/\s/g, "");
+//     setTemplateName(newValue);
+//   };
+
+//   // Fetch WABA List
+//   // useEffect(() => {
+//   //   const fetchWabaList = async () => {
+//   //     setIsLoading(true);
+//   //     try {
+//   //       const response = await getWabaList();
+//   //       // setWabaList(response);
+//   //       if (Array.isArray(response) && response.length > 0) {
+//   //         setWabaList(response);
+
+//   //         setSelectedWaba(response[0].mobileNo);
+//   //       } else {
+//   //         toast.error("No WABA accounts found!");
+//   //       }
+//   //     } catch (error) {
+//   //       toast.error("Error fetching WABA List:", error);
+//   //     }
+//   //     setIsLoading(false);
+//   //   };
+//   //   fetchWabaList();
+//   // }, []);
+
+//   const fetchTemplateData = async () => {
+//     if (!selectedTemplate || !wabaAccountId) return;
+//     try {
+//       const response = await getWabaTemplate(wabaAccountId, selectedTemplate);
+
+//       if (response && response.data && response.data.length > 0) {
+//         setTemplateData(response.data[0]);
+//       } else {
+//         toast.error("Failed to load template data!");
+//       }
+//     } catch (error) {
+//       toast.error("Error fetching template data.");
+//     }
+//   };
+
+//   useEffect(() => {
+//     fetchTemplateData();
+//   }, [selectedTemplate, wabaAccountId]);
+
+//   useEffect(() => {
+//     if (!selectedWaba) {
+//       // reset all WABA-dependent state
+//       setFilteredData([]);
+//       setTemplateName("");
+//       setSelectedCategory("");
+//       setSelectedType("");
+//       setSelectedStatus("");
+//       setSelectedDate(null);
+//       setHasSearched(false);
+//       setWabaAccountId(""); // reset local account ID too
+//     }
+//   }, [selectedWaba]);
+
+//   const handleSearch = async () => {
+//     if (!selectedWaba?.mobileNo) {
+//       toast.error("Please select a (WABA) Account to proceed.");
+//       return;
+//     }
+//     setIsFetching(true);
+//     setHasSearched(true);
+//     try {
+//       const response = await getWabaTemplateDetails(selectedWaba?.mobileNo);
+//       if (response) {
+//         applyFilters(response);
+//       } else {
+//         setFilteredData([]);
+//       }
+//     } catch (error) {
+//       toast.error("Error fetching template data:", error);
+//       setFilteredData([]);
+//     }
+//     setIsFetching(false);
+//   };
+
+//   const applyFilters = (data) => {
+//     const filtered = data.filter((item) => {
+//       const itemCategory = item.category?.toLowerCase().trim() || "";
+//       const itemType = item.type?.toLowerCase().trim() || "";
+//       const itemStatus = item.status?.toLowerCase().trim() || "";
+//       const itemName = item.templateName?.toLowerCase().trim() || "";
+//       const itemDateLocal = moment(new Date(item?.createdDate)).format(
+//         "DD-MM-YYYY"
+//       );
+//       let selectedDateLocal = "";
+//       if (selectedDate) {
+//         selectedDateLocal = moment(selectedDate).format("DD-MM-YYYY");
+//         // selectedDateLocal = new Date(selectedDate).toLocaleDateString("en-CA");
+//       }
+//       return (
+//         (!selectedCategory ||
+//           itemCategory === selectedCategory.toLowerCase().trim()) &&
+//         (!selectedType || itemType === selectedType.toLowerCase().trim()) &&
+//         (!selectedStatus ||
+//           itemStatus === selectedStatus.toLowerCase().trim()) &&
+//         (!templateName ||
+//           itemName.includes(templateName.toLowerCase().trim())) &&
+//         (!selectedDate || itemDateLocal.includes(selectedDateLocal))
+//       );
+//     });
+//     setFilteredData(filtered);
+//   };
+
+//   const [syncTemplates, setSyncTemplates] = useState(false);
+
+//   const handleSyncTemplate = async () => {
+//     if (!syncWabaId) {
+//       toast.error("Please select a WABA account to sync templates.");
+//       return;
+//     }
+//     setSyncTemplates(true);
+//     try {
+//       const res = await syncStatus(syncWabaId);
+//       toast(
+//         `InsertCount: ${res.InsertCount}, \nApproved: ${res.Approved},\nRejectedCount: ${res.Rejected}, \nInsertCount: ${res.InsertCount}, \nDuplicateCount: ${res.DuplicateCount}`
+//       );
+//       setSyncStatusVisible(false);
+//     } catch (e) {
+//       toast.error("Failed to sync template.");
+//     } finally {
+//       setSyncTemplates(false);
+//     }
+//   };
+
+//   // Updated Templates Display UI (Add this inside your JSX)
+//   <div className="grid grid-cols-3 gap-4 mt-4">
+//     {templates.map((template) => (
+//       <div
+//         key={template.id}
+//         className="p-4 transition-shadow duration-300 bg-white border rounded-lg shadow-md border-gray-50 hover:shadow-lg"
+//       >
+//         <h3 className="font-semibold text-gray-700">{template.header}</h3>
+//         <p className="mt-2 text-sm text-gray-500">{template.body}</p>
+//       </div>
+//     ))}
+//   </div>;
+
+//   return (
+//     <div className="w-full">
+//       {/* {isLoading ? (
+//         <Loader />
+//       ) : ( */}
+//         <Box
+//           sx={{
+//             width: "100%",
+//             //  maxHeight: "91vh",
+//             // overflowY: "hidden",
+//           }}
+//         >
+          
+
+//           <div className="flex flex-wrap items-center justify-between w-full">
+//             <Tabs
+//               value={value}
+//               onChange={handleChange}
+//               aria-label="Manage Campaigns Tabs"
+//               textColor="primary"
+//               indicatorColor="primary"
+//             >
+//               <Tab
+//                 label={
+//                   <span>
+//                     <LibraryBooksOutlinedIcon size={20} />All Templates
+//                   </span>
+//                 }
+//                 {...a11yProps(0)}
+//                 sx={{
+//                   textTransform: "none",
+//                   fontWeight: "bold",
+//                   color: "text.secondary",
+//                   "&:hover": {
+//                     color: "primary.main",
+//                     backgroundColor: "#f0f4ff",
+//                     borderRadius: "8px",
+//                   },
+//                 }}
+//               />
+//               <Tab
+//                 label={
+//                   <span>
+//                     <ExploreOutlinedIcon size={20} /> Explore
+//                   </span>
+//                 }
+//                 {...a11yProps(1)}
+//                 sx={{
+//                   textTransform: "none",
+//                   fontWeight: "bold",
+//                   color: "text.secondary",
+//                   "&:hover": {
+//                     color: "primary.main",
+//                     backgroundColor: "#f0f4ff",
+//                     borderRadius: "8px",
+//                   },
+//                 }}
+//               />
+//             </Tabs>
+//             <div className="flex gap-2 mt-2 md:mt-0">
+//               <div className="w-max-content">
+//                 <UniversalButton
+//                   id="manageTemplateAddNewBtn"
+//                   name="manageTemplateAddNewBtn"
+//                   label="Add New"
+//                   onClick={() => navigate("/createtemplate")}
+//                   variant="primary"
+//                   icon={<AddOutlinedIcon fontSize="small" />}
+//                 />
+//               </div>
+//               <div className="w-max-content">
+//                 <UniversalButton
+//                   id="syncStatusBtn"
+//                   name="syncStatusBtn"
+//                   label="Sync Status"
+//                   variant="primary"
+//                   onClick={() => {
+//                     setSyncStatusVisible(true);
+//                   }}
+//                   icon={<SyncOutlinedIcon fontSize="small" />}
+//                 />
+//               </div>
+//             </div>
+//           </div>
+//           <CustomTabPanel value={value} index={1}>
+//             <TemplateLibrary />
+//           </CustomTabPanel>
+//           <CustomTabPanel value={value} index={0}>
+//             <div className="w-full">
+//               <>
+//                 <div className="flex flex-wrap items-end justify-start w-full gap-4 mb-5">
+//                   {/* <div className="w-full sm:w-46">
+//                     <DropdownWithSearch
+//                       id="manageTemplateWaba"
+//                       name="manageTemplateWaba"
+//                       label="Select WABA"
+//                       tooltipContent="Select your whatsapp business account"
+//                       tooltipPlacement="right"
+//                       options={wabaList.map((waba) => ({
+//                         value: waba.mobileNo,
+//                         label: waba.name,
+//                       }))}
+//                       value={selectedWaba}
+//                       onChange={setSelectedWaba}
+//                       placeholder="Select WABA"
+//                     />
+//                   </div> */}
+//                   <div className="w-full sm:w-42">
+//                     <UniversalDatePicker
+//                       id="manageTemplateDate"
+//                       name="manageTemplateDate"
+//                       label="Creation Date"
+//                       value={selectedDate}
+//                       onChange={setSelectedDate}
+//                       placeholder="Pick a start date"
+//                       tooltipContent="Select the starting date for your project"
+//                       tooltipPlacement="right"
+//                       error={!selectedDate}
+//                       errorText="Please select a valid date"
+//                       maxDate={new Date()}
+//                     />
+//                   </div>
+//                   <div className="w-full sm:w-42">
+//                     <InputField
+//                       id="manageTemplateName"
+//                       name="manageTemplateName"
+//                       label="Template Name"
+//                       value={templateName}
+//                       onChange={handleInputChange}
+//                       tooltipPlacement="right"
+//                       tooltipContent="Your templatename should not contain spaces."
+//                       placeholder="Template Name"
+//                     />
+//                   </div>
+
+//                   <div className="w-full sm:w-42">
+//                     <AnimatedDropdown
+//                       id="manageTemplateCategory"
+//                       name="manageTemplateCategory"
+//                       label="Category"
+//                       tooltipContent="Select category"
+//                       tooltipPlacement="right"
+//                       options={[
+//                         { value: "marketing", label: "Marketing" },
+//                         { value: "utility", label: "Utility" },
+//                         { value: "authentication", label: "Authentication" },
+//                       ]}
+//                       value={selectedCategory}
+//                       onChange={setSelectedCategory}
+//                       placeholder="Category"
+//                     />
+//                   </div>
+//                   <div className="w-full sm:w-42">
+//                     <AnimatedDropdown
+//                       id="manageTemplateType"
+//                       name="manageTemplateType"
+//                       label="Type"
+//                       tooltipContent="Select Type"
+//                       tooltipPlacement="right"
+//                       options={[
+//                         { value: "text", label: "Text" },
+//                         { value: "image", label: "Image" },
+//                         { value: "video", label: "Video" },
+//                         { value: "document", label: "Document" },
+//                         { value: "carousel", label: "Carousel" },
+//                         { value: "location", label: "Location" },
+//                       ]}
+//                       value={selectedType}
+//                       onChange={setSelectedType}
+//                       placeholder="Type"
+//                     />
+//                   </div>
+//                   <div className="w-full sm:w-42">
+//                     <AnimatedDropdown
+//                       id="manageTemplateStatus"
+//                       name="manageTemplateStatus"
+//                       label="Status"
+//                       tooltipContent="Select Status"
+//                       tooltipPlacement="right"
+//                       options={[
+//                         { value: "pending", label: "Pending" },
+//                         { value: "rejected", label: "Rejected" },
+//                         { value: "approved", label: "Approved" },
+//                       ]}
+//                       value={selectedStatus}
+//                       onChange={setSelectedStatus}
+//                       placeholder="Status"
+//                     />
+//                   </div>
+
+//                   <div className="w-max-content">
+//                     <UniversalButton
+//                       id="manageTemplateSearchBtn"
+//                       name="manageTemplateSearchBtn"
+//                       label={isFetching ? "Searching..." : "Search"}
+//                       icon={<IoSearch />}
+//                       onClick={handleSearch}
+//                       variant="primary"
+//                       disabled={isFetching}
+//                     />
+//                   </div>
+//                 </div>
+
+//                 {selectedWaba?.mobileNo && (
+//                   <DataTable
+//                     id="whatsappManageTemplateTable"
+//                     name="whatsappManageTemplateTable"
+//                     wabaNumber={selectedWaba?.mobileNo}
+//                     wabaSrno={selectedWaba?.wabaSrno} // Pass wabaSrno
+//                     wabaList={wabaList}
+//                     data={filteredData}
+//                     fetchTemplateData={handleSearch}
+//                   />
+//                 )}
+//               </>
+//             </div>
+//           </CustomTabPanel>
+//         </Box>
+//       {/* // )} */}
+
+//       <Dialog
+//         header="Sync Templates"
+//         visible={syncStatusVisible}
+//         onHide={() => setSyncStatusVisible(false)}
+//         className="w-1/3"
+//         draggable={false}
+//       >
+//         <div className="flex flex-col gap-4">
+//           <AnimatedDropdown
+//             label="Sync Waba Account"
+//             id="syncWabaAccount"
+//             name="syncWabaAccount"
+//             options={wabaList.map((waba) => ({
+//               value: waba.wabaSrno,
+//               label: waba.name,
+//             }))}
+//             value={syncWabaId}
+//             onChange={(e) => {
+//               setSyncWabaId(e);
+//             }}
+//           />
+//           <div className="w-max-content flex items-center justify-center">
+//             <UniversalButton
+//               id="syncTemplates"
+//               name="syncTemplates"
+//               // label="Sync Waba Templates"
+//               label={syncTemplates ? "Syncing..." : "Sync Waba Templates"}
+//               disabled={syncTemplates}
+//               icon={<SyncOutlinedIcon fontSize="small" />}
+//               onClick={handleSyncTemplate}
+//               variant="primary"
+//             />
+//           </div>
+//         </div>
+//       </Dialog>
+//     </div>
+//   );
+// };
+
+// export default ManageTemplate;
+
+// above comment code is with waba list context
+
+import React from "react";
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import Box from "@mui/material/Box";
+import Tabs from "@mui/material/Tabs";
+import Tab from "@mui/material/Tab";
+import toast from "react-hot-toast";
+import Grid from "@mui/material/Grid";
+import Paper from "@mui/material/Paper";
+import FormControl from "@mui/material/FormControl";
+import Radio from "@mui/material/Radio";
+import FormLabel from "@mui/material/FormLabel";
+import RadioGroup from "@mui/material/RadioGroup";
+import Typography from "@mui/material/Typography";
+import FormControlLabel from "@mui/material/FormControlLabel";
+import "../style.css";
+import { BreadCrumb } from "primereact/breadcrumb";
+import { RadioButton } from "primereact/radiobutton";
+import { Dialog } from "primereact/dialog";
+import moment from "moment";
+
+
+
+
+// ICONS
+import { IoSearch } from "react-icons/io5";
+import GradingOutlinedIcon from "@mui/icons-material/GradingOutlined";
+import LibraryBooksOutlinedIcon from "@mui/icons-material/LibraryBooksOutlined";
+import KeyboardArrowDownOutlinedIcon from "@mui/icons-material/KeyboardArrowDownOutlined";
+import HealthAndSafetyOutlinedIcon from "@mui/icons-material/HealthAndSafetyOutlined";
+import LocalShippingOutlinedIcon from "@mui/icons-material/LocalShippingOutlined";
+import StorefrontOutlinedIcon from "@mui/icons-material/StorefrontOutlined";
+import WorkOutlineOutlinedIcon from "@mui/icons-material/WorkOutlineOutlined";
+import MovieFilterOutlinedIcon from "@mui/icons-material/MovieFilterOutlined";
+import PublicOutlinedIcon from "@mui/icons-material/PublicOutlined";
+import RestaurantOutlinedIcon from "@mui/icons-material/RestaurantOutlined";
+import HouseOutlinedIcon from "@mui/icons-material/HouseOutlined";
+import SettingsOutlinedIcon from "@mui/icons-material/SettingsOutlined";
+import ScienceOutlinedIcon from "@mui/icons-material/ScienceOutlined";
+import ExploreOutlinedIcon from "@mui/icons-material/ExploreOutlined";
+import SyncOutlinedIcon from "@mui/icons-material/SyncOutlined";
+import AddOutlinedIcon from "@mui/icons-material/AddOutlined";
+import KeyboardArrowRightOutlinedIcon from "@mui/icons-material/KeyboardArrowRightOutlined";
+import ArrowForwardIosOutlinedIcon from "@mui/icons-material/ArrowForwardIosOutlined";
+import HdrStrongOutlinedIcon from "@mui/icons-material/HdrStrongOutlined";
+import ShoppingCartOutlinedIcon from "@mui/icons-material/ShoppingCartOutlined";
+import AccountBalanceIcon from "@mui/icons-material/AccountBalance";
+import CallIcon from "@mui/icons-material/Call";
+import SupportAgentIcon from "@mui/icons-material/SupportAgent";
+import EventIcon from "@mui/icons-material/Event";
+import SellIcon from "@mui/icons-material/Sell";
+import GroupsIcon from "@mui/icons-material/Groups";
+import PermIdentityIcon from "@mui/icons-material/PermIdentity";
+import LocalMallIcon from "@mui/icons-material/LocalMall";
+import PaymentIcon from "@mui/icons-material/Payment";
+import CardTravelOutlinedIcon from "@mui/icons-material/CardTravelOutlined";
+import SchoolOutlinedIcon from "@mui/icons-material/SchoolOutlined";
+import AccountBalanceOutlinedIcon from "@mui/icons-material/AccountBalanceOutlined";
+import ShoppingCartIcon from "@mui/icons-material/ShoppingCart";
+
+
+
+// APIS
+import {
+  getTemplateList,
+  getWabaList,
+  getWabaTemplate,
+  getWabaTemplateDetails,
+  syncStatus,
+} from "@/apis/whatsapp/whatsapp.js";
+
+
+
+// COMPONENTS
+import DataTable from "./components/Datatable.jsx";
+import AnimatedDropdown from "../components/AnimatedDropdown";
+import InputField from "../components/InputField";
+import UniversalDatePicker from "../components/UniversalDatePicker";
+import UniversalButton from "../components/UniversalButton";
+import UniversalSkeleton from "../components/UniversalSkeleton";
+import Loader from "../components/Loader";
+import { CustomTabPanel, a11yProps } from "./components/CustomTabPanel";
+import DropdownWithSearch from "../components/DropdownWithSearch.jsx";
+import TemplateLibrary from "./components/TemplateLibrary.jsx";
+
+const ManageTemplate = () => {
+  const navigate = useNavigate();
+
+  const [isLoading, setIsLoading] = useState(true);
+  const [isFetching, setIsFetching] = useState(false);
+  const [value, setValue] = useState(0);
+  const [hasSearched, setHasSearched] = useState(false);
+
+  const [selectedTemplate, setSelectedTemplate] = useState("");
+  const [wabaAccountId, setWabaAccountId] = useState("");
+
+  const [syncStatusVisible, setSyncStatusVisible] = useState(false);
+  const [syncWabaId, setSyncWabaId] = useState(null);
+
+  // Filters
+  const [selectedDate, setSelectedDate] = useState(null);
+  const [selectedWaba, setSelectedWaba] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("");
+  const [selectedType, setSelectedType] = useState("");
+  const [selectedStatus, setSelectedStatus] = useState("");
+  const [templateName, setTemplateName] = useState("");
+
+  // Data
+  const [wabaList, setWabaList] = useState([]);
+  const [filteredData, setFilteredData] = useState([]);
+
+  // Library Filters
+  const [selectedLibraryCategory, setSelectedLibraryCategory] = useState("");
+  const [selectedIndustry, setSelectedIndustry] = useState("");
+
+  const [showAllIndustries, setShowAllIndustries] = useState(false);
+
+  const [searchActive, setSearchActive] = useState(false);
+
+  const [templates, setTemplates] = useState([]);
+
+  const [tempCount, setTempCount] = useState({
+    authentication: 0,
+    marketing: 0,
+    utility: 0,
+  });
+
+  const [selectedOptionCategory, setSelectedOptionCategory] = useState("");
+
+
+
+  const [industryCount, setIndustryCount] = useState({
+    marketing: 0,
+    utility: 0,
+    authentication: 0,
+    ecommerce: 0,
+    financial: 0,
+    education: 0,
+    banking: 0,
+    healthcare: 0,
+    logistics: 0,
+    retail: 0,
+    corporate: 0,
+    entertainment: 0,
+    travel: 0,
+    food: 0,
+    real_estate: 0,
+    manufacturing: 0,
+    science: 0,
+  });
+
+
+  // useEffect(() => {
+  //   async function handleFetch() {
+  //     const res = await getTemplateList();
+
+  //     const totalCount = {
+  //       authentication: 0,
+  //       marketing: 0,
+  //       utility: 0,
+  //     };
+
+  //     res.forEach((item) => {
+  //       if (item.category in totalCount) {
+  //         totalCount[item.category] += 1;
+  //       }
+  //     });
+
+  //     setTempCount(totalCount);
+  //   }
+
+  //   handleFetch();
+  // }, []);
+
+  // useEffect(() => {
+  //   async function handleFetch() {
+  //     const res = await getTemplateList({
+  //       category: selectedOptionCategory,
+  //     });
+
+  //     const industryCount = {
+  //       marketing: 0,
+  //       utility: 0,
+  //       authentication: 0,
+  //       ecommerce: 0,
+  //       financial: 0,
+  //       education: 0,
+  //       banking: 0,
+  //       healthcare: 0,
+  //       logistics: 0,
+  //       retail: 0,
+  //       corporate: 0,
+  //       entertainment: 0,
+  //       travel: 0,
+  //       food: 0,
+  //       real_estate: 0,
+  //       manufacturing: 0,
+  //       science: 0,
+  //     };
+
+  //     res.forEach((item) => {
+  //       if (item.industry in industryCount) {
+  //         industryCount[item.industry] += 1;
+  //       }
+  //     });
+
+  //     setIndustryCount(industryCount);
+  //   }
+
+  //   handleFetch();
+  // }, [selectedOptionCategory]);
+
+  // Dynamic template counts (Replace this with API data)
+  const templateCounts = {
+    ...industryCount,
+  };
+
+  const handleViewTemplate = (data) => {
+    setViewTemplate(true);
+    setTemplateDetails(data);
+  };
+
+  // Reset filters when WABA changes
+  useEffect(() => {
+    setTemplateName("");
+    setSelectedCategory("");
+    setSelectedType("");
+    setSelectedStatus("");
+    setSelectedDate(null);
+    setFilteredData([]);
+    setHasSearched(false);
+  }, [selectedWaba]);
+
+  // useEffect(() => {
+  //   async function handleFetchAllTemplates() {
+  //     const data = {
+  //       category: selectedOptionCategory,
+  //       industry: selectedOptionIndustry,
+  //     };
+  //     try {
+  //       const res = await getTemplateList(data);
+  //       setTemplates(res);
+  //     } catch (e) {
+  //       toast.error("Failed to fetch templates.");
+  //     }
+  //   }
+  //   handleFetchAllTemplates();
+  // }, [selectedOptionCategory, selectedOptionIndustry]);
+
+  const handleChange = (event, newValue) => {
+    setValue(newValue);
+  };
+
+  const handleInputChange = (e) => {
+    const newValue = e.target.value.replace(/\s/g, "");
+    setTemplateName(newValue);
+  };
+
+  // Fetch WABA List
+  useEffect(() => {
+    const fetchWabaList = async () => {
+      setIsLoading(true);
+      try {
+        const response = await getWabaList();
+        // setWabaList(response);
+        if (Array.isArray(response) && response.length > 0) {
+          setWabaList(response);
+
+          setSelectedWaba(response[0].mobileNo);
+        } else {
+          toast.error("No WABA accounts found!");
+        }
+      } catch (error) {
+        toast.error("Error fetching WABA List:", error);
+      }
+      setIsLoading(false);
+    };
+    fetchWabaList();
+  }, []);
+
+  const fetchTemplateData = async () => {
+    if (!selectedTemplate || !wabaAccountId) return;
+    try {
+      const response = await getWabaTemplate(wabaAccountId, selectedTemplate);
+
+      if (response && response.data && response.data.length > 0) {
+        setTemplateData(response.data[0]);
+      } else {
+        toast.error("Failed to load template data!");
+      }
+    } catch (error) {
+      toast.error("Error fetching template data.");
+    }
+  };
+
+  useEffect(() => {
+    fetchTemplateData();
+  }, [selectedTemplate, wabaAccountId]);
+
+  const handleSearch = async () => {
+    if (!selectedWaba) {
+      toast.error("Please select a (WABA) Account to proceed.");
+      return;
+    }
+    setIsFetching(true);
+    setHasSearched(true);
+    try {
+      const response = await getWabaTemplateDetails(selectedWaba);
+      if (response) {
+        applyFilters(response);
+      } else {
+        setFilteredData([]);
+      }
+    } catch (error) {
+      toast.error("Error fetching template data:", error);
+      setFilteredData([]);
+    }
+    setIsFetching(false);
+  };
+
+  const applyFilters = (data) => {
+    const filtered = data.filter((item) => {
+      const itemCategory = item.category?.toLowerCase().trim() || "";
+      const itemType = item.type?.toLowerCase().trim() || "";
+      const itemStatus = item.status?.toLowerCase().trim() || "";
+      const itemName = item.templateName?.toLowerCase().trim() || "";
+      const itemDateLocal = moment(new Date(item?.createdDate)).format(
+        "DD-MM-YYYY"
+      );
+      let selectedDateLocal = "";
+      if (selectedDate) {
+        selectedDateLocal = moment(selectedDate).format("DD-MM-YYYY");
+        // selectedDateLocal = new Date(selectedDate).toLocaleDateString("en-CA");
+      }
+      return (
+        (!selectedCategory ||
+          itemCategory === selectedCategory.toLowerCase().trim()) &&
+        (!selectedType || itemType === selectedType.toLowerCase().trim()) &&
+        (!selectedStatus ||
+          itemStatus === selectedStatus.toLowerCase().trim()) &&
+        (!templateName ||
+          itemName.includes(templateName.toLowerCase().trim())) &&
+        (!selectedDate || itemDateLocal.includes(selectedDateLocal))
+      );
+    });
+    setFilteredData(filtered);
+  };
+
+  const [syncTemplates, setSyncTemplates] = useState(false);
+
+  const handleSyncTemplate = async () => {
+    if (!syncWabaId) {
+      toast.error("Please select a WABA account to sync templates.");
+      return;
+    }
+    setSyncTemplates(true);
+    try {
+      const res = await syncStatus(syncWabaId);
+      toast(
+        `InsertCount: ${res.InsertCount}, \nApproved: ${res.Approved},\nRejectedCount: ${res.Rejected}, \nInsertCount: ${res.InsertCount}, \nDuplicateCount: ${res.DuplicateCount}`
+      );
+      setSyncStatusVisible(false);
+    } catch (e) {
+      toast.error("Failed to sync template.");
+    } finally {
+      setSyncTemplates(false);
+    }
+  };
+
+  // Updated Templates Display UI (Add this inside your JSX)
+  <div className="grid grid-cols-3 gap-4 mt-4">
+    {templates.map((template) => (
+      <div
+        key={template.id}
+        className="p-4 transition-shadow duration-300 bg-white border rounded-lg shadow-md border-gray-50 hover:shadow-lg"
+      >
+        <h3 className="font-semibold text-gray-700">{template.header}</h3>
+        <p className="mt-2 text-sm text-gray-500">{template.body}</p>
+      </div>
+    ))}
+  </div>;
+
+  return (
+    <div className="w-full">
+      {isLoading ? (
+        <Loader />
+      ) : (
+        <Box
+          sx={{
+            width: "100%",
+            //  maxHeight: "91vh",
+            // overflowY: "hidden",
+          }}
+        >
+          {/* <div className="flex flex-wrap items-center justify-between w-full gap-4 mb-2 ">
+            <div>
+              <h1 className="text-xl font-semibold text-gray-700">
+                Manage Templates
+              </h1>
+            </div>
+            <div className={`relative flex items-center transition-all duration-300 ${searchActive ? "w-85" : "w-12"} border rounded-lg border-gray-300 `}>
+              <input
+                type="text"
+                className={`border border-gray-300 rounded-lg px-4 py-2 text-sm transition-all duration-300 ${searchActive ? "w-full opacity-100" : "w-0 opacity-0"} focus:outline-none`}
+                placeholder="Search templates (status, name etc.)"
+                onBlur={() => setSearchActive(false)}
+              />
+              <IoSearch
+                className="absolute text-gray-600 cursor-pointer right-3"
+                size={22}
+                color='green'
+                onClick={() => setSearchActive(true)}
+              />
+            </div>
+
+
+            <div className="relative flex items-center h-0 transition-all duration-500 w-120">
+              <div
+                className={`relative flex items-center transition-all duration-300 border rounded-lg border-gray-300 
+            ${searchActive ? "w-80 " : "w-0"} 
+            ${!searchActive ? "animate-rotate-glow" : ""}`}
+              >
+                <input
+                  type="text"
+                  className={`rounded-lg pr-3 pl-2 py-2 text-sm transition-all duration-300 
+                ${searchActive
+                      ? "border border-gray-400 outline-none w-full opacity-100"
+                      : "w-0 opacity-0"
+                    } focus:outline-none`}
+                  placeholder="Search templates (status, name etc.)"
+                  onBlur={() => setSearchActive(false)}
+                />
+                <IoSearch
+                  className="absolute text-gray-600 cursor-pointer right-4"
+                  size={22}
+                  color="green"
+                  onClick={() => setSearchActive(true)}
+                />
+              </div>
+
+              {!searchActive && (
+                <span className="ml-2 text-sm text-gray-500 transition-opacity duration-300 animate-fade-in">
+                  Search Templates
+                </span>
+              )}
+            </div>
+            <div className="flex gap-2">
+              <div className="w-max-content">
+                <UniversalButton
+                  id="manageTemplateAddNewBtn"
+                  name="manageTemplateAddNewBtn"
+                  label="Add New"
+                  onClick={() => navigate("/createtemplate")}
+                  variant="primary"
+                  icon={<AddOutlinedIcon fontSize="small" />}
+                />
+              </div>
+              <div className="w-max-content">
+                <UniversalButton
+                  id="syncStatusBtn"
+                  name="syncStatusBtn"
+                  label="Sync Status"
+                  variant="primary"
+                  onClick={() => {
+                    setSyncStatusVisible(true);
+                  }}
+                  icon={<SyncOutlinedIcon fontSize="small" />}
+                />
+              </div>
+            </div>
+          </div> */}
+
+          <div className="flex flex-wrap items-center justify-between w-full">
+            <Tabs
+              value={value}
+              onChange={handleChange}
+              aria-label="Manage Campaigns Tabs"
+              textColor="primary"
+              indicatorColor="primary"
+            >
+              <Tab
+                label={
+                  <span>
+                    <LibraryBooksOutlinedIcon size={20} />All Templates
+                  </span>
+                }
+                {...a11yProps(0)}
+                sx={{
+                  textTransform: "none",
+                  fontWeight: "bold",
+                  color: "text.secondary",
+                  "&:hover": {
+                    color: "primary.main",
+                    backgroundColor: "#f0f4ff",
+                    borderRadius: "8px",
+                  },
+                }}
+              />
+              <Tab
+                label={
+                  <span>
+                    <ExploreOutlinedIcon size={20} /> Explore
+                  </span>
+                }
+                {...a11yProps(1)}
+                sx={{
+                  textTransform: "none",
+                  fontWeight: "bold",
+                  color: "text.secondary",
+                  "&:hover": {
+                    color: "primary.main",
+                    backgroundColor: "#f0f4ff",
+                    borderRadius: "8px",
+                  },
+                }}
+              />
+            </Tabs>
+            <div className="flex gap-2 mt-2 md:mt-0">
+              <div className="w-max-content">
+                <UniversalButton
+                  id="manageTemplateAddNewBtn"
+                  name="manageTemplateAddNewBtn"
+                  label="Add New"
+                  onClick={() => navigate("/createtemplate")}
+                  variant="primary"
+                  icon={<AddOutlinedIcon fontSize="small" />}
+                />
+              </div>
+              <div className="w-max-content">
+                <UniversalButton
+                  id="syncStatusBtn"
+                  name="syncStatusBtn"
+                  label="Sync Status"
+                  variant="primary"
+                  onClick={() => {
+                    setSyncStatusVisible(true);
+                  }}
+                  icon={<SyncOutlinedIcon fontSize="small" />}
+                />
+              </div>
+            </div>
+          </div>
+          <CustomTabPanel value={value} index={1}>
+            <TemplateLibrary />
+          </CustomTabPanel>
+          <CustomTabPanel value={value} index={0}>
+            <div className="w-full">
+              <>
+                <div className="flex flex-wrap items-end justify-start w-full gap-4 mb-5">
+                  <div className="w-full sm:w-46">
+                    <DropdownWithSearch
+                      id="manageTemplateWaba"
+                      name="manageTemplateWaba"
+                      label="Select WABA"
+                      tooltipContent="Select your whatsapp business account"
+                      tooltipPlacement="right"
+                      options={wabaList.map((waba) => ({
+                        value: waba.mobileNo,
+                        label: waba.name,
+                      }))}
+                      value={selectedWaba}
+                      onChange={setSelectedWaba}
+                      placeholder="Select WABA"
+                    />
+                  </div>
+                  <div className="w-full sm:w-42">
+                    <UniversalDatePicker
+                      id="manageTemplateDate"
+                      name="manageTemplateDate"
+                      label="Creation Date"
+                      value={selectedDate}
+                      onChange={setSelectedDate}
+                      placeholder="Pick a start date"
+                      tooltipContent="Select the starting date for your project"
+                      tooltipPlacement="right"
+                      error={!selectedDate}
+                      errorText="Please select a valid date"
+                      maxDate={new Date()}
+                    />
+                  </div>
+                  <div className="w-full sm:w-42">
+                    <InputField
+                      id="manageTemplateName"
+                      name="manageTemplateName"
+                      label="Template Name"
+                      value={templateName}
+                      onChange={handleInputChange}
+                      tooltipPlacement="right"
+                      tooltipContent="Your templatename should not contain spaces."
+                      placeholder="Template Name"
+                    />
+                  </div>
+
+                  <div className="w-full sm:w-42">
+                    <AnimatedDropdown
+                      id="manageTemplateCategory"
+                      name="manageTemplateCategory"
+                      label="Category"
+                      tooltipContent="Select category"
+                      tooltipPlacement="right"
+                      options={[
+                        { value: "marketing", label: "Marketing" },
+                        { value: "utility", label: "Utility" },
+                        { value: "authentication", label: "Authentication" },
+                      ]}
+                      value={selectedCategory}
+                      onChange={setSelectedCategory}
+                      placeholder="Category"
+                    />
+                  </div>
+                  <div className="w-full sm:w-42">
+                    <AnimatedDropdown
+                      id="manageTemplateType"
+                      name="manageTemplateType"
+                      label="Type"
+                      tooltipContent="Select Type"
+                      tooltipPlacement="right"
+                      options={[
+                        { value: "text", label: "Text" },
+                        { value: "image", label: "Image" },
+                        { value: "video", label: "Video" },
+                        { value: "document", label: "Document" },
+                        { value: "carousel", label: "Carousel" },
+                        { value: "location", label: "Location" },
+                      ]}
+                      value={selectedType}
+                      onChange={setSelectedType}
+                      placeholder="Type"
+                    />
+                  </div>
+                  <div className="w-full sm:w-42">
+                    <AnimatedDropdown
+                      id="manageTemplateStatus"
+                      name="manageTemplateStatus"
+                      label="Status"
+                      tooltipContent="Select Status"
+                      tooltipPlacement="right"
+                      options={[
+                        { value: "pending", label: "Pending" },
+                        { value: "rejected", label: "Rejected" },
+                        { value: "approved", label: "Approved" },
+                      ]}
+                      value={selectedStatus}
+                      onChange={setSelectedStatus}
+                      placeholder="Status"
+                    />
+                  </div>
+
+                  <div className="w-max-content">
+                    <UniversalButton
+                      id="manageTemplateSearchBtn"
+                      name="manageTemplateSearchBtn"
+                      label={isFetching ? "Searching..." : "Search"}
+                      icon={<IoSearch />}
+                      onClick={handleSearch}
+                      variant="primary"
+                      disabled={isFetching}
+                    />
+                  </div>
+                </div>
+
+                <DataTable
+                  id="whatsappManageTemplateTable"
+                  name="whatsappManageTemplateTable"
+                  wabaNumber={selectedWaba}
+                  wabaSrno={
+                    wabaList.find((waba) => waba.mobileNo === selectedWaba)
+                      ?.wabaSrno
+                  } // Pass wabaSrno
+                  wabaList={wabaList}
+                  data={filteredData}
+                  fetchTemplateData={handleSearch}
+                />
+              </>
+            </div>
+          </CustomTabPanel>
+        </Box>
+      )}
+
+      <Dialog
+        header="Sync Templates"
+        visible={syncStatusVisible}
+        onHide={() => setSyncStatusVisible(false)}
+        className="w-1/3"
+        draggable={false}
+      >
+        <div className="flex flex-col gap-4">
+          <AnimatedDropdown
+            label="Sync Waba Account"
+            id="syncWabaAccount"
+            name="syncWabaAccount"
+            options={wabaList.map((waba) => ({
+              value: waba.wabaSrno,
+              label: waba.name,
+            }))}
+            value={syncWabaId}
+            onChange={(e) => {
+              setSyncWabaId(e);
+            }}
+          />
+          <div className="w-max-content flex items-center justify-center">
+            <UniversalButton
+              id="syncTemplates"
+              name="syncTemplates"
+              // label="Sync Waba Templates"
+              label={syncTemplates ? "Syncing..." : "Sync Waba Templates"}
+              disabled={syncTemplates}
+              icon={<SyncOutlinedIcon fontSize="small" />}
+              onClick={handleSyncTemplate}
+              variant="primary"
+            />
+          </div>
+        </div>
+      </Dialog>
+    </div>
+  );
+};
+
+export default ManageTemplate;
