@@ -1,0 +1,1468 @@
+import React, { useEffect, useRef, useState, useCallback } from "react";
+import { RadioButton } from "primereact/radiobutton";
+import { Checkbox } from "primereact/checkbox";
+import toast from "react-hot-toast";
+import { Dialog } from "primereact/dialog";
+import { useNavigate } from "react-router-dom";
+import { ProgressSpinner } from "primereact/progressspinner";
+import moment from "moment";
+
+// MUI MATERIAL
+import { Box, Tab, } from "@mui/material";
+import IconButton from "@mui/material/IconButton";
+import Tabs, { tabsClasses } from "@mui/material/Tabs";
+
+// ICONS
+import CancelOutlinedIcon from "@mui/icons-material/CancelOutlined";
+import DescriptionOutlinedIcon from "@mui/icons-material/DescriptionOutlined";
+import DownloadForOfflineOutlinedIcon from "@mui/icons-material/DownloadForOfflineOutlined";
+import GradingOutlinedIcon from "@mui/icons-material/GradingOutlined";
+import LibraryBooksOutlinedIcon from "@mui/icons-material/LibraryBooksOutlined";
+import IosShareOutlinedIcon from "@mui/icons-material/IosShareOutlined";
+import { IoSearch } from "react-icons/io5";
+import { ImInfo } from "react-icons/im";
+import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
+
+// COMPONENTS
+import { a11yProps, CustomTabPanel, } from "../../whatsapp/managetemplate/components/CustomTabPanel";
+import UniversalDatePicker from "../../whatsapp/components/UniversalDatePicker";
+import InputField from "../../whatsapp/components/InputField";
+import AnimatedDropdown from "../../whatsapp/components/AnimatedDropdown";
+import UniversalButton from "../../whatsapp/components/UniversalButton";
+import DropdownWithSearch from "../../whatsapp/components/DropdownWithSearch";
+import UniversalLabel from "../../whatsapp/components/UniversalLabel";
+import CampaignTableSms from "./components/CampaignTableSms";
+import PreviousDaysLogsTable from "./components/PreviousDaysLogsTable";
+import DayWiseSummaryTableSms from "./components/DayWiseSummaryTableSms";
+// import AttachmentLogsTableSms from "./components/AttachmentLogsTbaleSms";
+import AttachmentLogsTable from "./components/AttachmentLogsTable";
+import ScheduleLogsTable from "./components/ScheduleLogsTable";
+import { DataTable } from "../../components/layout/DataTable";
+import CustomTooltip from "../../whatsapp/components/CustomTooltip";
+import UniversalSkeleton from "../../whatsapp/components/UniversalSkeleton";
+import PreviousDaysTableSms from "./components/PreviousDaysTableSms";
+import { ExportDialog } from "./components/exportDialog";
+import InfoPopover from "@/components/common/InfoPopover";
+
+// API
+import {
+  fetchCampaignData,
+  fetchPreviousDayReport,
+  getAttachmentLogs,
+  getAllCampaignSms,
+  getPreviousCampaignDetails,
+  getSummaryReport,
+  fetchScheduleCampaignData,
+  cancelScheduleCampaignSms,
+  getSMSCampaignDataByCampNo,
+} from "../../apis/sms/sms";
+import { fetchAllUsers, fetchUserSrno } from "@/apis/admin/admin";
+
+// CONTEXT
+import { useUser } from "@/context/auth";
+import { useUserAndAdminContext } from "@/context/UserAndAdminContext";
+
+
+
+const SmsReports = () => {
+  const navigate = useNavigate();
+
+  const [value, setValue] = useState(0);
+  const [isFetching, setIsFetching] = useState(false);
+  const [isFetchingScheduleData, setIsFetchingScheduleData] = useState(false);
+  const [exports, setExports] = useState(false);
+  const [exportStatus, setExportStatus] = useState("disable");
+  const [selectexportcampaign, setSelectExportCampaign] = useState(null);
+  const [customcolumnStatus, setCustomColumnStatus] = useState("disable");
+  const [customcolumnCustom, setCustomColumnCustom] = useState("disable");
+  const [campaigncolumns, setCampaignColumns] = useState([]);
+  const [campaigncolumnscustom, setCampaignColumnsCustom] = useState([]);
+  const [deliverystatus, setDeliveryStatus] = useState([]);
+  const [selecttemplatetype, setSelectTemplatetype] = useState(null);
+  const [selectstatus, setSelectStatus] = useState(null);
+  const [selectedCol, setSelectedCol] = useState("");
+
+  const dropdownButtonRefs = useRef([]);
+  const [dropdownOpenId, setDropdownOpenId] = useState(null);
+  const [campaignInfoMap, setCampaignInfoMap] = useState({});
+
+  const closeDropdown = () => setDropdownOpenId(null);
+
+  const { user } = useUser();
+  const [allUsers, setAllUsers] = useState([]);
+  const [selectedUser, setSelectedUser] = useState("");
+  const { currentRole } = useUserAndAdminContext();
+
+  //fetchAllUsersDetails
+  useEffect(() => {
+    const fetchAllUsersDetails = async () => {
+      const data = {
+        userSrno: "",
+        date: "",
+      };
+      try {
+        setIsFetching(true);
+        const res = await fetchUserSrno(data);
+        setAllUsers(res);
+      } catch (e) {
+        // console.log(e);
+        toast.error("Something went wrong! Please try again later.");
+      } finally {
+        setIsFetching(false);
+      }
+    };
+    fetchAllUsersDetails();
+  }, [user.role]);
+
+  //common State
+  const [rows, setRows] = useState([]);
+  const [columns, setColumns] = useState([]);
+
+  //campaign State
+  const [campaignDataToFilter, setCampaignDataToFilter] = useState({
+    toDate: new Date(),
+    campaingName: "",
+    mobilesnodata: "",
+    campaingType: 1,
+  });
+
+  const handleView = async (row) => {
+    const id = row.campaignSrno;
+
+    setDropdownOpenId(null);
+
+    const date = moment(campaignDataToFilter.toDate).format("YYYY-MM-DD");
+
+    const data = {
+      campaignSrno: id,
+      fromDate: date,
+      toDate: date,
+      selectedUserId: selectedUser || 0,
+    };
+
+    try {
+      const res = await getSMSCampaignDataByCampNo(data);
+
+      setCampaignInfoMap((prev) => ({
+        [id]: res || null,
+      }));
+
+      setDropdownOpenId(id);
+    } catch (e) {
+      console.error("Error fetching campaign summary:", e);
+    }
+  };
+
+  const [campaignScheduleDataToFilter, setCampaignScheduleDataToFilter] =
+    useState({
+      campaignDate: new Date(),
+      campaignName: "",
+    });
+
+  const [campaignTableData, setCampaignTableData] = useState([]);
+
+  //previous Day State
+  const [previousDataToFilter, setPreviousDataToFilter] = useState({
+    fromDate: new Date(),
+    toDate: new Date(),
+    campaingName: "",
+    mobilesnodata: "",
+    campaingType: "",
+    senderId: "",
+    message: "",
+    source: "",
+    searchSrNo: "",
+    searchUserId: "",
+  });
+  const [previousTableData, setPreviousTableData] = useState([]);
+  const [previousDayDetailsDialog, setPreviousDayDetailsDialog] =
+    useState(false);
+  const [selectedColDetails, setSelectedColDetails] = useState("");
+  const [previousDayColumn, setPreviousDayColumn] = useState([]);
+  const [previousDayRows, setPreviousDayRows] = useState([]);
+
+  //day wise State
+  const [daywiseDataToFilter, setDaywiseDataToFilter] = useState({
+    summaryType: "date,user",
+    smsType: "",
+    fromDate: new Date(),
+    toDate: new Date(),
+    selectOption: "daywise",
+  });
+  const [daywiseTableData, setDaywiseTableData] = useState([]);
+
+  //attachment state
+  const [attachmentDataToFilter, setAttachmentDataToFilter] = useState({
+    startDate: new Date(),
+    endDate: new Date(),
+    type: "",
+  });
+
+  const [attachmentTableData, setAttachmentTableData] = useState([]);
+
+  const [paginationModel, setPaginationModel] = useState({
+    page: 0,
+    pageSize: 10,
+  });
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPage, setTotalPage] = useState(1);
+
+  // cancel dialog
+  const [visible, setVisible] = useState(false);
+  const [currentRow, setCurrentRow] = useState(null);
+
+  const [isExportDialogOpen, setIsExportDialogOpen] = useState(false);
+  // const [allCampaigns, setAllCampaigns] = useState([]);
+  // const [dataToExport, setDataToExport] = useState({
+  //   campaignName: "",
+  //   fromDate: "",
+  //   toDate: "",
+  //   srno: 0,
+  //   isCustomField: 0,
+  //   customColumns: "",
+  //   campaignType: "",
+  //   status: "",
+  //   deliveryStatus: "",
+  //   source: "",
+  //   type: "campaign",
+  // });
+
+  const CampaignColumnsChange = (e) => {
+    let _campaigncolumns = [...campaigncolumns];
+
+    if (e.checked) _campaigncolumns.push(e.value);
+    else _campaigncolumns.splice(_campaigncolumns.indexOf(e.value), 1);
+
+    setCampaignColumns(_campaigncolumns);
+  };
+
+  const CampaignColumnsCustomChange = (e) => {
+    const { value, checked } = e.target;
+
+    setCampaignColumnsCustom((prevColumns) =>
+      checked
+        ? [...prevColumns, value]
+        : prevColumns.filter((col) => col !== value)
+    );
+  };
+
+  const DeliveryStatusChange = (e) => {
+    const { value, checked } = e.target; // Extract the value and checked state
+
+    setDeliveryStatus(
+      (prevStatus) =>
+        checked
+          ? [...prevStatus, value] // Add if checked
+          : prevStatus.filter((status) => status !== value) // Remove if unchecked
+    );
+  };
+
+  const handleExports = () => {
+    setExports(true);
+  };
+
+  const handleChangeexport = (event) => {
+    setExportStatus(event.target.value);
+  };
+
+  const handleChangeCustomColumn = (event) => {
+    setCustomColumnStatus(event.target.value);
+  };
+  const handleCustomColumn = (event) => {
+    setCustomColumnCustom(event.target.value);
+  };
+
+  const campaignoptions = [
+    { label: "Transactional", value: "1" },
+    { label: "Promotional", value: "2" },
+    { label: "International", value: "3" },
+  ];
+  const previousoptions = [
+    { label: "Transactional", value: "1" },
+    { label: "Promotional", value: "2" },
+    { label: "International", value: "3" },
+  ];
+  const summaryoptions = [
+    { label: "Transactional", value: "1" },
+    { label: "Promotional", value: "2" },
+    { label: "International", value: "3" },
+  ];
+
+  const summaryOptionsNew = [
+    { label: "Date And User", value: "date,user" },
+    { label: "Date, SendingService and New", value: "date,sendingservice,new" },
+    { label: "Date, User, Actual Sending and Country", value: "date,user,actual_sending,country" },
+  ];
+  const attachmentoptions = [
+    { label: "All", value: "1" },
+    { label: "File", value: "2" },
+    { label: "Short Url", value: "3" },
+    { label: "Whats App Chat", value: "4" },
+    { label: "Click To Call", value: "5" },
+  ];
+
+  const handleChangesmsReports = (event) => {
+    setSmsStatus(event.target.value);
+    // setRcsStatus(value);
+    // onOptionChange(value);
+  };
+
+  const handleChange = (event, newValue) => {
+    setValue(newValue);
+    setColumns([]);
+    setRows([]);
+  };
+
+  // useEffect(() => {
+  //   async function handleFetchAllSms() {
+  //     try {
+  //       const res = await getAllCampaignSms();
+  //       setAllCampaigns(res);
+  //     } catch (e) {
+  //       toast.error("Something went wrong");
+  //       return;
+  //     }
+  //   }
+  //   handleFetchAllSms();
+  // }, [isExportDialogOpen]);
+
+  const handleCampaignSearch = async () => {
+    if (currentRole === "Admin" && !selectedUser) {
+      toast.error("Please select a user first.");
+      return;
+    }
+    try {
+      setIsFetching(true);
+      const data = {
+        // ...campaignDataToFilter,
+        campaignName: campaignDataToFilter.campaingName,
+        campaignType: campaignDataToFilter.campaingType || "-1",
+        mobilesnodata: campaignDataToFilter.mobilesnodata,
+
+        toDate: moment(campaignDataToFilter.toDate).format("YYYY-MM-DD"),
+        fromDate: moment(campaignDataToFilter.toDate).format("YYYY-MM-DD"),
+        selectedUserId: selectedUser,
+      };
+      const res = await fetchCampaignData(data);
+
+      // Map account_usage_type_id to campaign types
+      const mappedData = Array.isArray(res)
+        ? res.map((item, i) => ({
+          // id: item.receipt_no_of_duplicate_message,
+          id: i + 1,
+          sn: i + 1,
+          ...item,
+          campaign_type:
+            item.account_usage_type_id === 1
+              ? "Transactional"
+              : item.account_usage_type_id === 2
+                ? "Promotional"
+                : item.account_usage_type_id === 3
+                  ? "International"
+                  : "Unknown",
+
+          insert_flag:
+            item.insert_flag === 1
+              ? "PENDING"
+              : item.insert_flag === 2
+                ? "PROCESSING"
+                : item.insert_flag === 3
+                  ? "COMPLETED"
+                  : "Unknown",
+        }))
+        : [];
+
+      setCampaignTableData(mappedData);
+      setRows(mappedData);
+    } catch (e) {
+      // console.log(e);
+      toast.error("Something went wrong.");
+    } finally {
+      setIsFetching(false);
+    }
+  };
+
+  const handleScheduleSmsCancel = async (row) => {
+    const srno = row.campaignSrno;
+    const selectedUserId = selectedUser || "0";
+
+    try {
+      const result = await cancelScheduleCampaignSms({ srno, selectedUserId });
+      if (result) {
+        toast.success("Campaign cancelled successfully");
+
+        // Remove it from the data table
+        setCampaignTableData((prev) =>
+          prev.filter((item) => item.campaignSrno !== srno)
+        );
+        setRows((prev) => prev.filter((item) => item.campaignSrno !== srno));
+      } else {
+        console.warn("Cancel request failed or returned empty response.");
+        toast.error("Cancel request failed");
+      }
+    } catch (error) {
+      console.error("Error cancelling campaign:", error);
+      toast.error("Error cancelling campaign");
+    }
+  };
+
+  const handleScheduleCampaignSearch = async () => {
+    if (currentRole === "Admin" && !selectedUser) {
+      toast.error("Please select a user first.");
+      return;
+    }
+    try {
+      setIsFetchingScheduleData(true);
+
+      const res = await fetchScheduleCampaignData(selectedUser || "0");
+      // console.log("API Response:", res);
+
+      // Step 1: Map API response first
+      let mappedData = Array.isArray(res)
+        ? res.map((item, i) => ({
+          id: item.srno || `row-${i}`,
+          sn: i + 1,
+          campaign_date: moment(item.campaignDate).format("DD-MM-YY"),
+          campaign_name: item.campaignName || "-",
+          que_time: moment(item?.sentTime).format("DD-MM-YY hh:mm:ss A") || "N/A",
+          processFlag: "Scheduled" || "-",
+          count: item.count || "-",
+          campaignSrno: item.srno,
+        }))
+        : [];
+
+      // Step 2: Extract filters if any
+      const filterCampaignName = campaignScheduleDataToFilter?.campaignName
+        ?.toLowerCase()
+        .trim();
+      const filterCampaignDate = campaignScheduleDataToFilter?.campaignDate
+        ? new Date(campaignScheduleDataToFilter.campaignDate)
+          .toISOString()
+          .slice(0, 10)
+        : null;
+      setCampaignTableData(mappedData);
+      setRows(mappedData);
+
+
+    } catch (error) {
+      console.error("Error fetching campaign data:", error);
+      toast.error("Something went wrong.");
+    } finally {
+      setIsFetchingScheduleData(false);
+    }
+  };
+
+  const [clicked, setClicked] = useState([]);
+
+  const handleInfo = (row) => {
+    const id = row.id;
+    setDropdownOpenId((prevId) => (prevId === id ? null : id));
+
+    const data = {
+      que_time: row.que_time,
+      account_usage_type_id: row.account_usage_type_id,
+      "Entity ID": row.PE_ID,
+      smsunit: row.smsunit,
+      actual_sms_length: row.actual_sms_length,
+      sent_time: row.sent_time,
+      isunicode: row.isunicode,
+      source: row.source,
+      circle_srno: row.circle_srno,
+      del_time: row.del_time,
+    };
+    setClicked(data || []);
+  };
+
+  useEffect(() => {
+  }, [clicked]);
+
+  const handlePreviousDaysSearch = async () => {
+    if (currentRole === "Admin" && !selectedUser) {
+      toast.error("Please select a user first.");
+      return;
+    }
+    const data = {
+      ...previousDataToFilter,
+      fromDate: moment(previousDataToFilter.fromDate).format("YYYY-MM-DD"),
+      toDate: moment(previousDataToFilter.toDate).format("YYYY-MM-DD"),
+      selectedUserId: selectedUser,
+    };
+
+    try {
+      setIsFetching(true);
+      const res = await fetchPreviousDayReport(data);
+      setRows(
+        Array.isArray(res)
+          ? res.map((item, i) => ({
+            id: i + 1,
+            sn: i + 1,
+            ...item,
+          }))
+          : []
+      );
+    } catch (e) {
+      // console.log(e);
+      toast.error("Something went wrong.");
+    } finally {
+      setIsFetching(false);
+    }
+  };
+
+  const handleDayWiseSummary = async () => {
+    if (currentRole === "Admin" && !selectedUser) {
+      toast.error("Please select a user first.");
+      return;
+    }
+    const data = {
+      // ...daywiseDataToFilter,
+      fromDate: moment(daywiseDataToFilter.fromDate).format("YYYY-MM-DD"),
+      toDate: moment(daywiseDataToFilter.toDate).format("YYYY-MM-DD"),
+      // summaryType: daywiseDataToFilter.summaryType ?? "",
+      summaryType: "date,user",
+      // smsType: daywiseDataToFilter.smsType ?? "",
+      // summaryType:
+      //   currentRole === "Admin"
+      //     ? daywiseDataToFilter.summaryType ?? ""
+      //     : "date,user", // Default for non-admin users
+      selectedUserId: selectedUser || 0,
+    };
+
+    try {
+      setIsFetching(true);
+      const res = await getSummaryReport(data);
+      setRows(
+        Array.isArray(res)
+          ? res.map((item, i) => ({
+            id: i + 1,
+            sn: i + 1,
+            ...item,
+          }))
+          : []
+      );
+    } catch (e) {
+      // console.log(e);
+      toast.error("Something went wrong.");
+    } finally {
+      setIsFetching(false);
+    }
+  };
+
+  const [childFn, setChildFn] = useState(null);
+
+  const handleDayWiseSummaryExport = useCallback((fn) => {
+    setChildFn(() => fn);
+  }, []);
+
+
+
+  const handleAttachmentSearch = async () => {
+    if (currentRole === "Admin" && !selectedUser) {
+      toast.error("Please select a user first.");
+      return;
+    }
+    const data = {
+      ...attachmentDataToFilter,
+      startDate: moment(attachmentDataToFilter.startDate).format("YYYY-MM-DD"),
+      endDate: moment(attachmentDataToFilter.endDate).format("YYYY-MM-DD"),
+      type: attachmentDataToFilter.type || "",
+      selectedUserId: selectedUser,
+    };
+
+    try {
+      setIsFetching(true);
+      const res = await getAttachmentLogs(data);
+      setRows(
+        Array.isArray(res)
+          ? res.map((item, i) => ({
+            id: i + 1,
+            sn: i + 1,
+            ...item,
+          }))
+          : []
+      );
+    } catch (e) {
+      // console.log(e);
+      toast.error("Something went wrong.");
+    } finally {
+      setIsFetching(false);
+    }
+  };
+
+  const handlePreviosDayDetailDisplay = async (col) => {
+    if (!col) return;
+    const data = {
+      summaryType: col || selectedCol,
+      mobileNo: "",
+      fromDate: moment(previousDataToFilter.fromDate).format("YYYY-MM-DD"),
+      toDate: moment(previousDataToFilter.toDate).format("YYYY-MM-DD"),
+      page: currentPage,
+      source: "api",
+      selectedUserId: selectedUser,
+    };
+
+    setPreviousDayDetailsDialog(true);
+    setSelectedColDetails(col);
+    try {
+      setIsFetching(true);
+      const res = await getPreviousCampaignDetails(data);
+      navigate("/smscampaigndetailsreport", {
+        state: {
+          campaignDetails: res?.data,
+          total: res?.total || 0,
+          campaignName: col,
+          data: data,
+          selectedUser: selectedUser,
+        },
+      });
+      setTotalPage(res?.pages || 0);
+
+      setPreviousDayColumn([
+        { field: "sn", headerName: "S.No", flex: 0, minWidth: 50 },
+        {
+          field: "status",
+          headerName: "Status",
+          flex: 1,
+          minWidth: 120,
+        },
+        {
+          field: "sent_time",
+          headerName: "Sent Time",
+          flex: 1,
+          minWidth: 120,
+        },
+        {
+          field: "mobile_no",
+          headerName: "Mobile Number",
+          width: 140,
+
+        },
+        {
+          field: "message",
+          headerName: "Message",
+          flex: 1,
+          minWidth: 120,
+        },
+        {
+          field: "actual_status",
+          headerName: "Actual Status",
+          flex: 1,
+          minWidth: 120,
+        },
+        {
+          field: "senderid",
+          headerName: "SenderId",
+          flex: 1,
+          minWidth: 120,
+        },
+        {
+          field: "action",
+          headerName: "Action",
+          flex: 1,
+          minWidth: 120,
+          renderCell: (params) => (
+            <CustomTooltip title="Info" placement="top" arrow>
+              <span>
+                <IconButton
+                  type="button"
+                  ref={(el) => {
+                    if (el) dropdownButtonRefs.current[params.row.id] = el;
+                  }}
+                  onClick={() => handleInfo(params.row)}
+                  className="no-xs relative"
+                >
+                  <ImInfo size={18} className="text-green-500 " />
+                </IconButton>
+
+                <InfoPopover
+                  anchorEl={dropdownButtonRefs.current[params.row.id]}
+                  open={dropdownOpenId === params.row.id}
+                  onClose={closeDropdown}
+                >
+                  {clicked && Object.keys(clicked).length > 0 ? (
+                    <table className="w-80 text-sm text-left border border-gray-200 rounded-md overflow-hidden">
+                      <tbody>
+                        {Object.entries(clicked).map(([key, value], index) => (
+                          <tr
+                            key={index}
+                            className="hover:bg-gray-50 transition-colors border-b last:border-none"
+                          >
+                            <td className="px-4 py-2 font-medium text-gray-600 capitalize w-1/3">
+                              {key}
+                            </td>
+                            <td className="px-4 py-2 text-gray-800">
+                              {value || "N/A"}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  ) : (
+                    <div className="text-sm text-gray-400 italic px-2 py-2">
+                      No data
+                    </div>
+                  )}
+                </InfoPopover>
+              </span>
+            </CustomTooltip>
+          ),
+        },
+      ]);
+
+      setPreviousDayRows(
+        Array.isArray(res?.data)
+          ? res?.data.map((item, index) => ({
+            sn: index + 1,
+            id: index + 1,
+            ...item,
+          }))
+          : []
+      );
+      setPreviousDayDetailsDialog(true);
+    } catch (e) {
+      // console.log(e);
+      toast.error("Something went wrong.");
+    } finally {
+      setIsFetching(false);
+    }
+  };
+
+  useEffect(() => {
+    handlePreviosDayDetailDisplay(selectedCol);
+  }, [currentPage, selectedCol]);
+
+  const handleCancel = (srno, campaignName) => {
+    if (!srno || !campaignName) {
+      console.error("SRNO is undefined. Cannot cancel campaign.");
+      toast.error("Failed to cancel campaign. SRNO is missing.");
+      return;
+    }
+    setVisible(true);
+    setCurrentRow({ srno, campaignName });
+  };
+
+  const handleCancelConfirm = async (srno) => {
+    if (!srno) {
+      toast.error("SRNO is missing. Cannot cancel the campaign.");
+      return;
+    }
+
+    const selectedUserId = selectedUser || 0;
+
+    try {
+      setIsFetching(true);
+
+      const result = await cancelScheduleCampaignSms({ srno, selectedUserId });
+
+      if (result) {
+        toast.success("Campaign cancelled successfully");
+        handleScheduleCampaignSearch();
+        setVisible(false);
+      } else {
+        console.warn("Cancel request failed or returned empty response.");
+        toast.error("Cancel request failed");
+      }
+    } catch (error) {
+      console.error("Error cancelling campaign:", error);
+      toast.error("Error cancelling campaign");
+    } finally {
+      setIsFetching(false);
+    }
+  };
+
+  return (
+    <div>
+      <Box sx={{ width: "100%" }}>
+        <div className="flex md:flex-col flex-col-reverse">
+          <div className="flex items-center justify-end pr-2">
+            <div className="w-full sm:w-60 px-2">
+              {currentRole === "Admin" && (
+                <DropdownWithSearch
+                  id="manageuser"
+                  name="manageuser"
+                  label="Select User"
+                  tooltipContent="Select user you want to see reports"
+                  tooltipPlacement="right"
+                  options={allUsers
+                    .slice()
+                    .sort((a, b) => a.userName.localeCompare(b.userName))
+                    .map((user) => ({
+                      label: user.userName,
+                      value: user.srNo,
+                    }))
+                  }
+                  value={selectedUser}
+                  onChange={setSelectedUser}
+                  placeholder="Select User"
+                />
+              )}
+            </div>
+          </div>
+          <div className="flex items-center justify-between pr-2">
+            <Tabs
+              value={value}
+              onChange={handleChange}
+              aria-label="Manage Campaigns Tabs"
+              textColor="primary"
+              indicatorColor="primary"
+              scrollButtons="auto"
+              variant="scrollable"
+              allowScrollButtonsMobile
+              sx={{
+                [`& .${tabsClasses.scrollButtons}`]: {
+                  "&.Mui-disabled": { opacity: 0.3 },
+                },
+              }}
+            >
+              <Tab
+                label={
+                  <span>
+                    <GradingOutlinedIcon size={20} /> Campaigns Logs
+                  </span>
+                }
+                {...a11yProps(0)}
+                sx={{
+                  textTransform: "none",
+                  fontWeight: "bold",
+                  color: "text.secondary",
+                  "&:hover": {
+                    color: "primary.main",
+                    backgroundColor: "#f0f4ff",
+                    borderRadius: "8px",
+                  },
+                }}
+              />
+              <Tab
+                label={
+                  <span>
+                    <LibraryBooksOutlinedIcon size={20} /> API Logs
+                  </span>
+                }
+                {...a11yProps(1)}
+                sx={{
+                  textTransform: "none",
+                  fontWeight: "bold",
+                  color: "text.secondary",
+                  "&:hover": {
+                    color: "primary.main",
+                    backgroundColor: "#f0f4ff",
+                    borderRadius: "8px",
+                  },
+                }}
+              />
+              <Tab
+                label={
+                  <span>
+                    <LibraryBooksOutlinedIcon size={20} /> Day Wise Summary
+                  </span>
+                }
+                {...a11yProps(2)}
+                sx={{
+                  textTransform: "none",
+                  fontWeight: "bold",
+                  color: "text.secondary",
+                  "&:hover": {
+                    color: "primary.main",
+                    backgroundColor: "#f0f4ff",
+                    borderRadius: "8px",
+                  },
+                }}
+              />
+              <Tab
+                label={
+                  <span>
+                    <LibraryBooksOutlinedIcon size={20} /> Attachment Logs
+                  </span>
+                }
+                {...a11yProps(3)}
+                sx={{
+                  textTransform: "none",
+                  fontWeight: "bold",
+                  color: "text.secondary",
+                  "&:hover": {
+                    color: "primary.main",
+                    backgroundColor: "#f0f4ff",
+                    borderRadius: "8px",
+                  },
+                }}
+              />
+              <Tab
+                label={
+                  <span>
+                    <LibraryBooksOutlinedIcon size={20} /> Schedule Logs
+                  </span>
+                }
+                {...a11yProps(4)}
+                sx={{
+                  textTransform: "none",
+                  fontWeight: "bold",
+                  color: "text.secondary",
+                  "&:hover": {
+                    color: "primary.main",
+                    backgroundColor: "#f0f4ff",
+                    borderRadius: "8px",
+                  },
+                }}
+              />
+            </Tabs>
+          </div>
+
+        </div>
+        <CustomTabPanel value={value} index={0}>
+          <div className="w-full">
+            <div className="flex flex-wrap items-end w-full gap-2 mb-5">
+              <div className="w-full sm:w-52">
+                <UniversalDatePicker
+                  label="Created On"
+                  id="campaigndate"
+                  name="campaigndate"
+                  value={campaignDataToFilter.toDate}
+                  onChange={(value) => {
+                    setCampaignDataToFilter((prev) => ({
+                      ...prev,
+                      toDate: value,
+                    }));
+                  }}
+                  placeholder="Select Date"
+                  minDate={new Date().setMonth(new Date().getMonth() - 3)}
+                  maxDate={new Date()}
+                />
+              </div>
+              <div className="w-full sm:w-52">
+                <InputField
+                  label="Campaign Name"
+                  id="campaignName"
+                  name="campaignName"
+                  placeholder="Enter campaign name"
+                  value={campaignDataToFilter.campaingName}
+                  onChange={(e) => {
+                    setCampaignDataToFilter((prev) => ({
+                      ...prev,
+                      campaingName: e.target.value,
+                    }));
+                  }}
+                />
+              </div>
+              <div className="w-full sm:w-52">
+                <InputField
+                  label="Mobile Number"
+                  id="campaignnumber"
+                  name="campaignnumber"
+                  placeholder="Enter Campaign Number"
+                  value={campaignDataToFilter.mobilesnodata}
+                  onChange={(e) => {
+                    setCampaignDataToFilter((prev) => ({
+                      ...prev,
+                      mobilesnodata: e.target.value,
+                    }));
+                  }}
+                />
+              </div>
+              <div className="w-full sm:w-52">
+                <AnimatedDropdown
+                  label="Campaign Type"
+                  id="campaignType"
+                  name="campaignType"
+                  options={campaignoptions}
+                  value={campaignDataToFilter.campaingType}
+                  placeholder="Select Campaign Type"
+                  onChange={(value) => {
+                    setCampaignDataToFilter((prev) => ({
+                      ...prev,
+                      campaingType: value,
+                    }));
+                  }}
+                />
+              </div>
+              <div className="w-full sm:w-52 flex gap-2">
+                <div className="w-max-content">
+                  <UniversalButton
+                    label={isFetching ? "Searching..." : "Search"}
+                    id="campaignsearch"
+                    name="campaignsearch"
+                    variant="primary"
+                    icon={<IoSearch />}
+                    onClick={handleCampaignSearch}
+                    disabled={isFetching}
+                  />
+                </div>
+                <UniversalButton
+                  label={"Export"}
+                  id="exportCampaign"
+                  name="exportCampaign"
+                  variant="primary"
+                  onClick={() => {
+                    setIsExportDialogOpen(true);
+                  }}
+                  icon={
+                    <IosShareOutlinedIcon
+                      sx={{ marginBottom: "3px", fontSize: "1.1rem" }}
+                    />
+                  }
+                  disabled={isFetching}
+                />
+              </div>
+            </div>
+          </div>
+          <div className="w-full">
+            <CampaignTableSms
+              id="CampaignTableSms"
+              name="CampaignTableSms"
+              data={campaignTableData}
+              selectedUser={selectedUser}
+            />
+          </div>
+        </CustomTabPanel>
+
+        <CustomTabPanel value={value} index={1}>
+          <div className="w-full">
+            <div className="flex flex-wrap items-end w-full gap-2 mb-5">
+              <div className="w-full sm:w-56">
+                <UniversalDatePicker
+                  label="From Date"
+                  id="previousfromDate"
+                  name="previousfromDate"
+                  placeholder="Select From Date"
+                  value={previousDataToFilter.fromDate}
+                  onChange={(value) => {
+                    setPreviousDataToFilter((prev) => ({
+                      ...prev,
+                      fromDate: value,
+                    }));
+                  }}
+                  minDate={new Date().setMonth(new Date().getMonth() - 3)}
+                  maxDate={new Date()}
+                  defaultValue={new Date()}
+                />
+              </div>
+              <div className="w-full sm:w-56">
+                <UniversalDatePicker
+                  label="To Date"
+                  id="previoustodate"
+                  name="previoustodate"
+                  placeholder="Select To Date"
+                  value={previousDataToFilter.toDate}
+                  onChange={(value) => {
+                    setPreviousDataToFilter((prev) => ({
+                      ...prev,
+                      toDate: value,
+                    }));
+                  }}
+                  minDate={new Date().setMonth(new Date().getMonth() - 3)}
+                  maxDate={new Date()}
+                />
+              </div>
+              <div className="w-full sm:w-46">
+                <InputField
+                  label="Mobile Number"
+                  id="previousnumber"
+                  name="previousnumber"
+                  placeholder="Enter Mobile Number"
+                  value={previousDataToFilter.mobilesnodata}
+                  onChange={(e) => {
+                    setPreviousDataToFilter((prev) => ({
+                      ...prev,
+                      mobilesnodata: e.target.value,
+                    }));
+                  }}
+                  type="number"
+                />
+              </div>
+              <div className="w-full sm:w-48">
+                <AnimatedDropdown
+                  label="Type"
+                  id="previousType"
+                  name="previousType"
+                  options={previousoptions}
+                  placeholder="Select Type"
+                  value={previousDataToFilter.campaingType}
+                  onChange={(value) => {
+                    setPreviousDataToFilter((prev) => ({
+                      ...prev,
+                      campaingType: value,
+                    }));
+                  }}
+                />
+              </div>
+              <div className="w-full sm:w-48">
+                <AnimatedDropdown
+                  label="Source"
+                  id="previousSource"
+                  name="previousSource"
+                  options={[
+                    {
+                      label: "All",
+                      value: "",
+                    },
+                    {
+                      label: "API",
+                      value: "api",
+                    },
+                    {
+                      label: "GUI",
+                      value: "gui",
+                    },
+                  ]}
+                  placeholder="Select Type"
+                  value={previousDataToFilter.source}
+                  onChange={(value) => {
+                    setPreviousDataToFilter((prev) => ({
+                      ...prev,
+                      source: value,
+                    }));
+                  }}
+                />
+              </div>
+              {/* <div className="w-full sm:w-42">
+                <InputField
+                  label="Sender ID"
+                  id="previoussenderid"
+                  name="previoussenderid"
+                  placeholder="Enter Sender ID"
+                  value={previousDataToFilter.senderId}
+                  onChange={(e) => {
+                    setPreviousDataToFilter((prev) => ({
+                      ...prev,
+                      senderId: e.target.value,
+                    }));
+                  }}
+                />
+              </div> */}
+              {/* <div className="w-full sm:w-42">
+                <InputField
+                  label="Content"
+                  id="previouscontent"
+                  name="previouscontent"
+                  placeholder="Enter Content ID"
+                  value={previousDataToFilter.message}
+                  onChange={(e) => {
+                    setPreviousDataToFilter((prev) => ({
+                      ...prev,
+                      message: e.target.value,
+                    }));
+                  }}
+                />
+              </div> */}
+
+              <div className="w-full sm:w-42">
+                <div className="w-max-content">
+                  <UniversalButton
+                    label={isFetching ? "Searching..." : "Search"}
+                    icon={<IoSearch />}
+                    id="previousshow"
+                    name="previousshow"
+                    variant="primary"
+                    onClick={handlePreviousDaysSearch}
+                    disabled={isFetching}
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+          <div className="w-full">
+            <PreviousDaysLogsTable
+              id="PreviousDaysTableSms"
+              name="PreviousDaysTableSms"
+              data={rows}
+              selectedUser={selectedUser}
+              setSelectedCol={setSelectedCol}
+              handlePreviosDayDetailDisplay={handlePreviosDayDetailDisplay}
+            />
+          </div>
+        </CustomTabPanel>
+
+        <CustomTabPanel value={value} index={2}>
+          <div className="w-full">
+            <div className="flex flex-wrap items-end w-full gap-2 mb-5">
+              <div className="w-full sm:w-56">
+                <UniversalDatePicker
+                  label="From Date"
+                  id="summaryfromDate"
+                  name="summaryfromDate"
+                  value={daywiseDataToFilter.fromDate}
+                  onChange={(e) => {
+                    setDaywiseDataToFilter((prev) => ({
+                      ...prev,
+                      fromDate: e,
+                    }));
+                  }}
+                />
+              </div>
+              <div className="w-full sm:w-56">
+                <UniversalDatePicker
+                  label="To Date"
+                  id="summarytodate"
+                  name="summarytodate"
+                  value={daywiseDataToFilter.toDate}
+                  onChange={(e) => {
+                    setDaywiseDataToFilter((prev) => ({
+                      ...prev,
+                      toDate: e,
+                    }));
+                  }}
+                />
+              </div>
+              <div className="w-full sm:w-56">
+                <AnimatedDropdown
+                  label="Type"
+                  id="type"
+                  name="type"
+                  options={summaryoptions}
+                  value={daywiseDataToFilter.smsType}
+                  placeholder="Select Type"
+                  onChange={(value) => {
+                    setDaywiseDataToFilter((prev) => ({
+                      ...prev,
+                      smsType: value,
+                    }));
+                  }}
+                  disabled={daywiseDataToFilter.selectOption === 1}
+                />
+              </div>
+              {/* <div className="w-full sm:w-56">
+                <AnimatedDropdown
+                  label="Summary Type"
+                  id="summaryType"
+                  name="summaryType"
+                  options={summaryOptionsNew}
+                  value={daywiseDataToFilter.summaryType}
+                  placeholder="Select Summary Type"
+                  onChange={(value) => {
+                    setDaywiseDataToFilter((prev) => ({
+                      ...prev,
+                      summaryType: value,
+                    }));
+                  }}
+                  disabled={daywiseDataToFilter.selectOption === 1}
+                />
+              </div> */}
+              <div className="w-full flex gap-4 sm:w-56">
+                <div className="w-max-content">
+                  <UniversalButton
+                    label={isFetching ? "Searching..." : "Search"}
+                    icon={<IoSearch />}
+                    id="summaryshow"
+                    name="summaryshow"
+                    variant="primary"
+                    onClick={handleDayWiseSummary}
+                    disabled={isFetching}
+                  />
+                </div>
+                <div className="w-max-content">
+                  <UniversalButton
+                    label="Export"
+                    icon={
+                      <IosShareOutlinedIcon
+                        sx={{ marginBottom: "3px", fontSize: "1.1rem" }}
+                      />
+                    }
+                    id="summaryshow"
+                    name="summaryshow"
+                    variant="primary"
+                    onClick={() => childFn && childFn()}
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="w-full">
+            <DayWiseSummaryTableSms
+              id="DayWiseSummaryTableSms"
+              name="DayWiseSummaryTableSms"
+              data={rows}
+              selectedUser={selectedUser}
+              exportFunction={handleDayWiseSummaryExport}
+            />
+          </div>
+        </CustomTabPanel>
+
+        <CustomTabPanel value={value} index={3}>
+          <div className="w-full">
+            <div className="flex flex-wrap items-end w-full gap-2 mb-5">
+              <div className="w-full sm:w-56">
+                <UniversalDatePicker
+                  label="From Date"
+                  id="attachmentfromDate"
+                  name="attachmentfromDate"
+                  value={attachmentDataToFilter.startDate}
+                  onChange={(e) => {
+                    setAttachmentDataToFilter((prev) => ({
+                      ...prev,
+                      startDate: e,
+                    }));
+                  }}
+                />
+              </div>
+              <div className="w-full sm:w-56">
+                <UniversalDatePicker
+                  label="To Date"
+                  id="attachmenttodate"
+                  name="attachmenttodate"
+                  value={attachmentDataToFilter.endDate}
+                  onChange={(e) => {
+                    setAttachmentDataToFilter((prev) => ({
+                      ...prev,
+                      endDate: e,
+                    }));
+                  }}
+                />
+              </div>
+              <div className="w-full sm:w-56">
+                <AnimatedDropdown
+                  label="Type"
+                  id="attachmentType"
+                  name="attachmentType"
+                  options={attachmentoptions}
+                  placeholder="Select Type"
+                  value={attachmentDataToFilter.type}
+                  onChange={(value) => {
+                    setAttachmentDataToFilter((prev) => ({
+                      ...prev,
+                      type: value,
+                    }));
+                  }}
+                />
+              </div>
+              <div className="w-max-content">
+                <UniversalButton
+                  label={isFetching ? "Searching..." : "Search"}
+                  icon={<IoSearch />}
+                  id="attachmentshow"
+                  name="attachmentshow"
+                  variant="primary"
+                  onClick={handleAttachmentSearch}
+                  disabled={isFetching}
+                />
+              </div>
+            </div>
+          </div>
+          <div className="w-full">
+            <AttachmentLogsTable
+              id="AttachmentTableSms"
+              name="AttachmentTableSms"
+              data={rows}
+              selectedUser={selectedUser}
+            />
+          </div>
+        </CustomTabPanel>
+
+        <CustomTabPanel value={value} index={4}>
+          <div className="w-full">
+            <div className="flex flex-wrap items-end w-full gap-2 mb-5">
+              <div className="w-full sm:w-52 flex gap-2">
+                <div className="w-max-content">
+                  <UniversalButton
+                    label={isFetchingScheduleData ? "Refreshing..." : "Refresh"}
+                    id="campaignsearch"
+                    name="campaignsearch"
+                    variant="primary"
+                    icon={<IoSearch />}
+                    onClick={handleScheduleCampaignSearch}
+                    disabled={isFetchingScheduleData}
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+          <div className="w-full">
+            <ScheduleLogsTable
+              id="ScheduleCampaignTableSms"
+              name="ScheduleCampaignTableSms"
+              data={rows}
+              onCancel={handleCancel}
+            />
+          </div>
+        </CustomTabPanel>
+      </Box>
+
+      {/* Cancel Dialog Starts */}
+      <Dialog
+        header={"Confirm Cancel"}
+        visible={visible}
+        style={{ width: "27rem" }}
+        onHide={() => setVisible(false)}
+        draggable={false}
+      >
+        <div className="flex items-center justify-center">
+          <CancelOutlinedIcon
+            sx={{
+              fontSize: 64,
+              color: "#ff3f3f",
+            }}
+          />
+        </div>
+        <div className="p-4 text-center">
+          <p className="text-[1.1rem] font-semibold text-gray-700">
+            Are you sure you want to cancel the campaign:
+            <span className="text-green-500">"{currentRow?.campaignName}"</span>
+            ?
+          </p>
+          <p className="mt-2 text-sm text-gray-500">
+            This action is irreversible.
+          </p>
+        </div>
+
+        <div className="flex justify-center gap-4 mt-2">
+          {!isFetching && (
+            <UniversalButton
+              label="Cancel"
+              style={{
+                backgroundColor: "#090909",
+              }}
+              onClick={() => setVisible(false)}
+            />
+          )}
+          <UniversalButton
+            label={isFetching ? "Confirm..." : "Confirm"}
+            style={{}}
+            onClick={() => handleCancelConfirm(currentRow.srno)}
+            disabled={isFetching}
+          />
+        </div>
+      </Dialog>
+      {/* Cancel Dialog Ends */}
+
+      {/* <Dialog
+        header={selectedColDetails}
+        visible={previousDayDetailsDialog}
+        onHide={() => {
+          setPreviousDayDetailsDialog(false);
+          setPreviousDayRows([]);
+          setPreviousDayColumn([]);
+          setTotalPage(0);
+          setPaginationModel({ page: 0, pageSize: 10 });
+          setCurrentPage(1);
+          setSelectedCol("");
+        }}
+        className="w-fit "
+        draggable={false}
+      >
+        <PreviousDaysTableSms
+          id="previousdaydetailstable"
+          name="previousdaydetailstable"
+          rows={previousDayRows}
+          col={previousDayColumn}
+          paginationModel={paginationModel}
+          setPaginationModel={setPaginationModel}
+          setCurrentPage={setCurrentPage}
+          totalPage={totalPage}
+          selectedUser={selectedUser}
+        />
+      </Dialog> */}
+
+      {/* exportDialogStart */}
+      {isExportDialogOpen && (
+        <ExportDialog
+          visibledialog={isExportDialogOpen}
+          setVisibledialog={setIsExportDialogOpen}
+          selectedUser={selectedUser}
+        // allCampaigns={allCampaigns}
+        // setDataToExport={setDataToExport}
+        // dataToExport={dataToExport}
+        />
+      )}
+    </div>
+  );
+};
+
+export default SmsReports;

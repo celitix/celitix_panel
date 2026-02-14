@@ -1,0 +1,15 @@
+===============Before admin build changes=============
+1.enable ip response via get ip api
+2.replace env with live URL
+
+
+==========================Add user details==========================
+Create and update user configuration
+1. usertype=1 and applicationtype=2 for creating reseller 
+2. usertype=3 and applicationtype=1 for creating direct user
+3. usertype=5 and applicationtype=1 for creating sales person
+4. usertype=6 and applicationtype=1 for creating accounting person
+
+RESELLER
+1. usertype=3 and applicationtype=2 for creating reseller user
+2. usertype=5 and applicationtype=1 for creating sales person
