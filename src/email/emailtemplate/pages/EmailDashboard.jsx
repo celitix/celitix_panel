@@ -295,6 +295,17 @@ const EmailDashboard = () => {
     }
   }
 
+  const replaceVariables = (html = "", varList = {}) => {
+    let processedHtml = html;
+
+    Object.keys(varList || {}).forEach((key) => {
+      const regex = new RegExp(`{#${key}#}`, "g");
+      processedHtml = processedHtml.replace(regex, varList[key] || "");
+    });
+
+    return processedHtml;
+  };
+
   return (
     <div>
       <div className=" bg-white border border-gray-300 rounded-xl shadow-sm">
@@ -486,11 +497,10 @@ const EmailDashboard = () => {
                     disabled={currentPage === 1}
                     onClick={() => setCurrentPage((p) => p - 1)}
                     className={`px-3 py-1 rounded border text-sm
-                          ${
-                            currentPage === 1
-                              ? "bg-gray-200 text-gray-400 cursor-not-allowed"
-                              : "bg-white hover:bg-blue-50"
-                          }`}
+                          ${currentPage === 1
+                        ? "bg-gray-200 text-gray-400 cursor-not-allowed"
+                        : "bg-white hover:bg-blue-50"
+                      }`}
                   >
                     Prev
                   </button>
@@ -502,11 +512,10 @@ const EmailDashboard = () => {
                         key={page}
                         onClick={() => setCurrentPage(page)}
                         className={`px-3 py-1 rounded border text-sm
-                              ${
-                                currentPage === page
-                                  ? "bg-blue-600 text-white border-blue-600"
-                                  : "bg-white hover:bg-blue-50"
-                              }`}
+                              ${currentPage === page
+                            ? "bg-blue-600 text-white border-blue-600"
+                            : "bg-white hover:bg-blue-50"
+                          }`}
                       >
                         {page}
                       </button>
@@ -518,11 +527,10 @@ const EmailDashboard = () => {
                     disabled={currentPage === totalPages}
                     onClick={() => setCurrentPage((p) => p + 1)}
                     className={`px-3 py-1 rounded border text-sm
-                            ${
-                              currentPage === totalPages
-                                ? "bg-gray-200 text-gray-400 cursor-not-allowed"
-                                : "bg-white hover:bg-blue-50"
-                            }`}
+                            ${currentPage === totalPages
+                        ? "bg-gray-200 text-gray-400 cursor-not-allowed"
+                        : "bg-white hover:bg-blue-50"
+                      }`}
                   >
                     Next
                   </button>
@@ -602,12 +610,13 @@ const EmailDashboard = () => {
               }}
               draggable={false}
             >
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid md:grid-cols-2 grid-cols-1 gap-4">
                 <div className="space-y-4">
                   <InputField
                     label={"From Email"}
                     id="fromEmail"
                     name="fromEmail"
+                    placeholder="Enter from email"
                     value={singleMailData.fromEmail}
                     onChange={(e) => {
                       setSingleMailDataData((prev) => ({
@@ -621,6 +630,7 @@ const EmailDashboard = () => {
                     label={"From Name"}
                     id="fromName"
                     name="fromName"
+                    placeholder="Enter from name"
                     value={singleMailData.fromName}
                     onChange={(e) => {
                       setSingleMailDataData((prev) => ({
@@ -634,6 +644,7 @@ const EmailDashboard = () => {
                     label={"Subject"}
                     id="subject"
                     name="subject"
+                    placeholder="Enter subject"
                     value={singleMailData.subject}
                     onChange={(e) => {
                       setSingleMailDataData((prev) => ({
@@ -647,6 +658,7 @@ const EmailDashboard = () => {
                     label={"To Email"}
                     id="toEmail"
                     name="toEmail"
+                    placeholder="Enter toEmail"
                     value={singleMailData.toEmail}
                     onChange={(e) => {
                       setSingleMailDataData((prev) => ({
@@ -660,6 +672,7 @@ const EmailDashboard = () => {
                     label={"CC"}
                     id="cc"
                     name="cc"
+                    placeholder="Enter cc emails"
                     value={singleMailData.cc}
                     onChange={(e) => {
                       setSingleMailDataData((prev) => ({
@@ -673,6 +686,7 @@ const EmailDashboard = () => {
                       label={"Body"}
                       id="Body"
                       name="Body"
+                      placeholder="Enter body content"
                       value={singleMailData.bodyHtml}
                       onChange={(e) => {
                         setSingleMailDataData((prev) => ({
@@ -692,6 +706,7 @@ const EmailDashboard = () => {
                             label={`variable-${index}`}
                             id={`variable-${index}`}
                             name={`variable-${index}`}
+                            placeholder={`Enter variable-${index}`}
                             value={singleMailData.varList[variable]}
                             onChange={(e) => {
                               handleInsertVariable(
@@ -720,8 +735,8 @@ const EmailDashboard = () => {
 
                   {/* Subject at top */}
                   <div className="px-6 py-5 border-b">
-                    <p className="text-xl font-semibold text-gray-900">
-                      {singleMailData.subject || "Enter subject"}
+                    <p className="text-xl font-semibold text-gray-900 break-words">
+                      {singleMailData.subject || "Subject"}
                     </p>
                   </div>
 
@@ -733,43 +748,53 @@ const EmailDashboard = () => {
                     </div>
 
                     {/* Sender details */}
-                    <div className="flex-1">
-                      <div className="flex items-center justify-between">
-                        <p className="font-semibold text-gray-900">
-                          {singleMailData.fromName || "Enter Sender Name"}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-start justify-between gap-2">
+                        <p className="font-semibold text-gray-900 break-words whitespace-normal min-w-0">
+                          {singleMailData.fromName || "Sender Name"}
                         </p>
-                        <p className="text-xs text-gray-400 justify-end">now</p>
+
+                        <p className="text-xs text-gray-400 shrink-0">now</p>
                       </div>
 
-                      <p className="text-xs text-gray-500">
-                        &lt;{singleMailData.fromEmail || "Enter sender email id"}&gt;
+                      {/* Email */}
+                      <p className="text-xs text-gray-500 break-words">
+                        &lt;{singleMailData.fromEmail || "Sender email id"}&gt;
                       </p>
 
-                      <p className="text-xs text-gray-500 mt-1">
-                        to {singleMailData.toEmail || "Enter recipient email id"}
+                      {/* To / CC */}
+                      <p className="text-xs text-gray-500 mt-1 break-words">
+                        to {singleMailData.toEmail || "Recipient email id"}
                         {singleMailData.cc && `, cc ${singleMailData.cc}`}
                       </p>
                     </div>
                   </div>
 
                   {/* Email Body */}
-                  <div className="px-6 py-6 text-sm text-gray-800">
+
+                  <div className="px-6 py-6 text-sm text-gray-800 break-words">
                     <div
                       dangerouslySetInnerHTML={{
-                        __html: singleMailData.bodyHtml || "Enter body content...",
+                        __html: replaceVariables(
+                          singleMailData.bodyHtml || "Body content...",
+                          singleMailData.varList,
+                        ),
                       }}
                     />
                   </div>
                   {singleMailData?.variablesList?.length > 0 && (
-                    <div className="px-6 pb-6">
+                    <div className="px-6 pb-6 min-w-0">
                       <p className="text-xs font-semibold text-gray-500 mb-2">
                         Variables Used
                       </p>
-                      <div className="flex flex-wrap gap-2">
+
+                      <div className="flex flex-wrap gap-2 min-w-0">
                         {singleMailData.variablesList.map((variable, i) => (
                           <span
                             key={i}
-                            className="bg-gray-100 text-xs px-3 py-1 rounded-full"
+                            className="bg-gray-100 text-xs px-3 py-1 rounded-full 
+                     break-words whitespace-normal 
+                     max-w-full"
                           >
                             {variable}:{" "}
                             {singleMailData.varList?.[variable] || "-"}
@@ -779,10 +804,13 @@ const EmailDashboard = () => {
                     </div>
                   )}
 
-                  <div className="px-6">
+                  <div className="px-6 py-2">
                     <p className="text-sm font-semibold">Best Regards</p>
-                    <p className="text-sm"> {singleMailData.fromName || "Enter Sender Name"}</p>
-                    </div>
+                    <p className="text-sm  break-words">
+                      {" "}
+                      {singleMailData.fromName || "Sender Name"}
+                    </p>
+                  </div>
                 </div>
               </div>
             </Dialog>
