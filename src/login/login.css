@@ -1,0 +1,95 @@
+.bluetxt {
+  background: linear-gradient(to right, #2b40b0, #8447c6, #36bae2);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  -background-clip: text;
+  -text-fill-color: transparent;
+}
+
+.custom-signin-btn {
+  isolation: isolate;
+  color: #000;
+  font-size: 16px;
+  line-height: 1.5;
+  font-weight: 500;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 12px 48px;
+  border-radius: 9999rem;
+  background: transparent;
+  position: relative;
+  border: none;
+  cursor: pointer;
+  transition: all 200ms ease-out;
+  overflow: hidden;
+}
+
+.custom-signin-btn > .back {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border: 2px solid black;
+  border-radius: inherit;
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  z-index: -1;
+  transition: all 200ms ease-out;
+}
+
+.custom-signin-btn > .back::before {
+  content: "";
+  width: 0;
+  height: auto;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  /* background: linear-gradient(to right, #2b40b0, #8447c6); */
+  background-color: #000;
+  position: absolute;
+  transition: all 200ms ease-out;
+}
+
+.custom-signin-btn:hover {
+  color: white;
+}
+
+.custom-signin-btn:hover > .back {
+  transform: scale(0.95);
+}
+
+.custom-signin-btn:hover > .back::before {
+  width: 120%;
+}
+
+.custom-signin-btn:active > .back {
+  transform: scale(0.9);
+}
+
+.custom-signin-btn.loading {
+  color: white;
+  pointer-events: none;
+}
+
+.custom-signin-btn.loading > .back {
+  transform: scale(0.95);
+}
+
+.custom-signin-btn.loading > .back::before {
+  width: 120% !important;
+}
+
+.circle-spinner {
+  width: 20px;
+  height: 20px;
+  border: 3px solid rgba(255, 255, 255, 0.4);
+  border-top: 3px solid white;
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

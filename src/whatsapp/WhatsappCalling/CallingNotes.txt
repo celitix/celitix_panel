@@ -1,0 +1,228 @@
+        status toggle - enable/disable
+        call visibility icon - default/hidden
+
+        call hours setting - 
+        status toggle - enable/disable
+        timezone select
+        weekly operating hours - mon-sun, from-to, add more time slots
+        holiday settings - date picker to select holidays
+
+        callback permission settings -
+        status toggle - enable/disable
+
+        SIP settings -
+        SIP server URL or hostname
+        SIP PORT
+        SIP Request URI Params
+         key-value1
+         key2-value2
+
+
+         
+
+1.Configure Call Settings
+
+Calling is not enabled by default on a business phone number
+Use the POST /<PHONE_NUMBER_ID>/settings endpoint to enable Calling API features on a business phone number.
+
+Calling Eligibility
+
+To qualify for Calling API features, your business must have a messaging limit of at least 2000 business-initiated conversations in a rolling 24-hour period.
+
+Learn more about Quality Ratings and Messaging Limits
+
+When you test your WhatsApp Calling integration using public test numbers (PTNs) and sandbox accounts, Calling API restrictions are relaxed.
+
+Learn more about testing your WhatsApp Calling API integration
+
+POST /<PHONE_NUMBER_ID>/settings  
+
+<PHONE_NUMBER_ID>
+
+Required
+Integer - The business phone number for which you are updating Calling API settings.
+
+Learn more about formatting phone numbers in Cloud API - +12784358810
+
+{
+  "calling": {
+    "status": "ENABLED",
+    "call_icon_visibility": "DEFAULT",
+    "call_hours": {
+      "status": "ENABLED",
+      "timezone_id": "America/Manaus",
+      "weekly_operating_hours": [
+        {
+          "day_of_week": "MONDAY",
+          "open_time": "0400",
+          "close_time": "1020"
+        },
+        {
+          "day_of_week": "TUESDAY",
+          "open_time": "0108",
+          "close_time": "1020"
+        }
+      ],
+      "holiday_schedule": [
+        {
+          "date": "2026-01-01",
+          "start_time": "0000",
+          "end_time": "2359"
+        }
+      ]
+    },
+    "callback_permission_status": "ENABLED",
+    "sip": {
+      "status": "ENABLED | DISABLED (default)",
+      "servers": [
+        {
+          "hostname": SIP_SERVER_HOSTNAME,
+          "port": SIP_SERVER_PORT,
+          "request_uri_user_params": {
+            "KEY1": "VALUE1",
+            "KEY2": "VALUE2"
+          }
+        }
+      ]
+    }
+  }
+}
+
+2.Session Initiation Protocol (SIP)
+
+Overview
+Session Initiation Protocol (SIP) is a signaling protocol used for initiating, maintaining, modifying, and terminating real-time communication sessions between two or more endpoints.
+
+
+Client Application UI Experience
+Call permission request flow and sample messages
+
+Call permission request basics
+You may proactively request a calling permission from a WhatsApp user by sending a permission request message, either as a:
+
+Free form interactive message - create template via using call permission request
+
+Template message
+The WhatsApp user may approve (temporary or permanent), decline, or simply not respond to a call permission request.
+
+Send free form call permission request message 
+{
+  "messaging_product": "whatsapp",
+  "recipient_type": "individual",
+  "to": "<PHONE_NUMBER_ID> or <WHATSAPP_ID>",
+  "type": "interactive",
+  "interactive": {
+    "type": "call_permission_request",
+    "action": {
+      "name": "call_permission_request"
+    },
+    "body": {
+      "text": "We would like to call you to help support your query on Order No: ON-12853."
+    }
+  }
+}
+
+Create and send call permission request template messages
+POST/<WHATSAPP_BUSINESS_ACCOUNT_ID>/message_templates
+
+{
+  "name": "sample_cpr_template",
+  "language": "en",
+  "category": "[MARKETING|UTILITY]",
+  "components": [
+     {
+      "type": "HEADER",
+      "text": "Support of Order No: {{1}}",
+      "example": {
+        "body_text": [
+          [
+            "ON-12345"
+          ]
+        ]
+      }
+    },    
+    {
+      "type": "BODY",
+      "text": "We would like to call you to help support your query on Order No: {{1}} for the item {{2}}.",
+      "example": {
+        "body_text": [
+          [
+            "ON-12345",
+            "Avocados"
+          ]
+        ]
+      }
+    },
+    {
+      "type": "FOOTER",
+      "text": "Talk to you soon!"
+    },
+    {
+      "type": "call_permission_request"
+    }
+  ]
+}
+
+
+Create and send WhatsApp call button template message
+POST/<WHATSAPP_BUSINESS_ACCOUNT_ID>/message_templates
+{
+  "name": "<NAME>",
+  "category": "<CATEGORY>",
+  "language": "<LANGUAGE>",
+  "components": [
+    {
+      "type": "BODY",
+      "text": "You can call us on WhatsApp now for faster service!"
+    },
+    {
+      "type": "BUTTONS",
+      "buttons": [
+        {
+          "type": "voice_call",
+          "text": "Call Now"
+        },
+        {
+          "type": "URL",
+          "text": "Contact Support",
+          "url": "https://www.luckyshrub.com/support"
+        }
+      ]
+    }
+  ]
+}
+
+
+Send call button message template
+POST/<PHONE_NUMBER_ID>/messages
+{
+  "to": "14085551234",
+  "messaging_product": "whatsapp",
+  "type": "template",
+  "recipient_type": "individual",
+  "template": {
+    "name": "wa_voice_call",
+    "language": {
+      "code": "en"
+    },
+    "components": [
+      {
+        "type": "button",
+        "sub_type" : "voice_call",
+        "parameters": [
+          {
+            "type": "ttl_minutes",
+            "ttl_minutes": 100
+          },
+          {
+            "type": "payload",
+            "payload": "payload data"
+          }
+        ]
+      }
+    ]
+  }
+}
+
+Calling deep links
+The process to create a calling deep link is the similar to a chat deep link, except the format for call deeplink is wa.me/call/<BUSINESS_PHONE_NUMBER>

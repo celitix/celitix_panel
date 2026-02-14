@@ -1,0 +1,4787 @@
+import React, { useEffect, useState, useRef } from "react";
+import toast from "react-hot-toast";
+import { DataGrid, GridFooterContainer } from "@mui/x-data-grid";
+import usePagination from "@mui/material/usePagination";
+import moment from "moment";
+import { styled } from "@mui/material/styles";
+import { Dialog } from "primereact/dialog";
+import { InputSwitch } from "primereact/inputswitch";
+import { RadioButton } from "primereact/radiobutton";
+import { Checkbox } from "primereact/checkbox";
+import Tabs from "@mui/material/Tabs";
+import Tab from "@mui/material/Tab";
+import PropTypes from "prop-types";
+import {
+  IconButton,
+  Paper,
+  Typography,
+  Box,
+  Button,
+  Tooltip,
+  Popover,
+} from "@mui/material";
+
+// ICONS 
+import { AccountBalanceWalletOutlined as WalletIcon } from "@mui/icons-material";
+import { HiLink } from "react-icons/hi2";
+import ContentCopyIcon from "@mui/icons-material/ContentCopy";
+import WhatsAppIcon from "@mui/icons-material/WhatsApp";
+import CampaignOutlinedIcon from "@mui/icons-material/CampaignOutlined";
+import IosShareOutlinedIcon from "@mui/icons-material/IosShareOutlined";
+import { BsJournalArrowDown } from "react-icons/bs";
+import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
+import LockOpenOutlinedIcon from "@mui/icons-material/LockOpenOutlined";
+import EmergencyOutlinedIcon from "@mui/icons-material/EmergencyOutlined";
+import RemoveRedEyeOutlinedIcon from "@mui/icons-material/RemoveRedEyeOutlined";
+import SettingsOutlinedIcon from "@mui/icons-material/SettingsOutlined";
+import KeyOutlinedIcon from "@mui/icons-material/KeyOutlined";
+import AssignmentOutlinedIcon from "@mui/icons-material/AssignmentOutlined";
+import EditNoteIcon from "@mui/icons-material/EditNote";
+import DeleteIcon from "@mui/icons-material/Delete";
+import SmsOutlinedIcon from "@mui/icons-material/SmsOutlined";
+import PhoneMissedOutlinedIcon from "@mui/icons-material/PhoneMissedOutlined";
+import EmailOutlinedIcon from "@mui/icons-material/EmailOutlined";
+import { MdOutlineDeleteForever } from "react-icons/md";
+import { IoAddSharp } from "react-icons/io5";
+import SupportAgentOutlinedIcon from "@mui/icons-material/SupportAgentOutlined";
+import AccountBalanceWalletIcon from "@mui/icons-material/AccountBalanceWallet";
+// import RemoveRedEyeOutlinedIcon from "@mui/icons-material/RemoveRedEyeOutlined";
+import CalendarTodayOutlinedIcon from "@mui/icons-material/CalendarTodayOutlined";
+import PersonOutlineOutlinedIcon from "@mui/icons-material/PersonOutlineOutlined";
+// import EmailOutlinedIcon from "@mui/icons-material/EmailOutlined";
+import PhoneOutlinedIcon from "@mui/icons-material/PhoneOutlined";
+import BusinessOutlinedIcon from "@mui/icons-material/BusinessOutlined";
+import LocationOnOutlinedIcon from "@mui/icons-material/LocationOnOutlined";
+import LocationCityOutlinedIcon from "@mui/icons-material/LocationCityOutlined";
+import MapOutlinedIcon from "@mui/icons-material/MapOutlined";
+import PublicOutlinedIcon from "@mui/icons-material/PublicOutlined";
+import PinDropOutlinedIcon from "@mui/icons-material/PinDropOutlined";
+import AccountTreeOutlinedIcon from "@mui/icons-material/AccountTreeOutlined";
+import CheckCircleOutlineOutlinedIcon from "@mui/icons-material/CheckCircleOutlineOutlined";
+import DeleteForeverIcon from "@mui/icons-material/DeleteForever";
+import CancelOutlinedIcon from "@mui/icons-material/CancelOutlined";
+import { Loop as LoopIcon } from "@mui/icons-material";
+
+// APIS
+import {
+  addMobileNumbers,
+  fetchUserbySrno,
+  getAllowedServices,
+  getCharges,
+  getMobileNumbers,
+  getPETMChain,
+  getPromoServices,
+  getPincodeData,
+  getTransServices,
+  getSalesPersonList,
+  saveCharges,
+  savePETMChain,
+  saveServicesByUser,
+  updateUserbySrno,
+  updateUserStatusbySrno,
+} from "@/apis/admin/admin";
+import {
+  addSmsPricing,
+  deleteRCSRateBySrno,
+  deleteWhatsappRateBySrno,
+  getRCSRateBySrno,
+  getRCSRateData,
+  getSmsRateByUser,
+  getVoiceRateBySrno,
+  getVoiceRateByUser,
+  getWhatsappRateBySrno,
+  getWhatsappRateData,
+  saveEditRcsRate,
+  saveEditWhatsappRate,
+  saveVoiceRate,
+  deleteVoiceRateBySrno,
+  deleteSmsRateByUser,
+  addEditHlrPricing,
+  deleteHlrPricing,
+  getHlrPricing,
+} from "@/apis/admin/userRate";
+import { getCountryList } from "@/apis/common/common";
+import {
+  fetchBalance,
+  getApiKey,
+  getOldApiKey,
+  updateApiKey,
+  updatePassword,
+} from "@/apis/settings/setting";
+
+// COMPONENTS
+import CustomTooltip from "@/whatsapp/components/CustomTooltip";
+import RadioGroupField from "@/whatsapp/components/RadioGroupField";
+import AnimatedDropdown from "@/whatsapp/components/AnimatedDropdown";
+import InputField from "@/whatsapp/components/InputField";
+import UniversalSkeleton from "@/whatsapp/components/UniversalSkeleton";
+import UniversalButton from "@/whatsapp/components/UniversalButton";
+import UniversalDatePicker from "@/whatsapp/components/UniversalDatePicker";
+import UniversalLabel from "@/whatsapp/components/UniversalLabel";
+import GeneratePasswordSettings from "@/profile/components/GeneratePasswordSettings";
+import CustomNoRowsOverlay from "@/whatsapp/components/CustomNoRowsOverlay";
+import { DataTable } from "@/components/layout/DataTable";
+import DropdownWithSearch from "@/whatsapp/components/DropdownWithSearch";
+
+function CustomTabPanel(props) {
+  const { children, value, index, ...other } = props;
+
+  return (
+    <div
+      role="tabpanel"
+      hidden={value !== index}
+      id={`simple-tabpanel-${index}`}
+      aria-labelledby={`simple-tab-${index}`}
+      {...other}
+    >
+      {value === index && <Box sx={{ p: 3 }}>{children}</Box>}
+    </div>
+  );
+}
+
+CustomTabPanel.propTypes = {
+  children: PropTypes.node,
+  index: PropTypes.number.isRequired,
+  value: PropTypes.number.isRequired,
+};
+
+function a11yProps(index) {
+  return {
+    id: `simple-tab-${index}`,
+    "aria-controls": `simple-tabpanel-${index}`,
+  };
+}
+
+const PaginationList = styled("ul")({
+  listStyle: "none",
+  padding: 0,
+  margin: 0,
+  display: "flex",
+  gap: "8px",
+});
+
+const CustomPagination = ({
+  totalPages,
+  paginationModel,
+  setPaginationModel,
+}) => {
+  const { items } = usePagination({
+    count: totalPages,
+    page: paginationModel.page + 1,
+    onChange: (_, newPage) =>
+      setPaginationModel({ ...paginationModel, page: newPage - 1 }),
+  });
+
+  return (
+    <Box sx={{ display: "flex", justifyContent: "center", padding: 0 }}>
+      <PaginationList>
+        {items.map(({ page, type, selected, ...item }, index) => {
+          let children = null;
+
+          if (type === "start-ellipsis" || type === "end-ellipsis") {
+            children = "…";
+          } else if (type === "page") {
+            children = (
+              <Button
+                key={index}
+                variant={selected ? "contained" : "outlined"}
+                size="small"
+                sx={{ minWidth: "27px" }}
+                {...item}
+              >
+                {page}
+              </Button>
+            );
+          } else {
+            children = (
+              <Button
+                key={index}
+                variant="outlined"
+                size="small"
+                {...item}
+                sx={{}}
+              >
+                {type === "previous" ? "Previous" : "Next"}
+              </Button>
+            );
+          }
+
+          return <li key={index}>{children}</li>;
+        })}
+      </PaginationList>
+    </Box>
+  );
+};
+
+const ManageUserTable = ({ id, name, allUsers = [], fetchAllUsersDetails }) => {
+  const [selectedRows, setSelectedRows] = useState([]);
+  const [paginationModel, setPaginationModel] = useState({
+    page: 0,
+    pageSize: 10,
+  });
+  const [value, setValue] = useState(0);
+  const [countryOptions, setCountryOptions] = useState([]);
+
+  const [accountManager, setAccountManager] = useState([]);
+
+  useEffect(() => {
+    async function handleFetchAccountManager() {
+      try {
+        const res = await getSalesPersonList();
+
+        const formattedData = Array.isArray(res?.data)
+          ? res?.data?.map((item, index) => ({
+            value: item?.SalesPersonId,
+            label: item?.SalesPersonName,
+          }))
+          : [];
+        setAccountManager(formattedData);
+      } catch (e) {
+        toast.error("Error fetching Account Manager List");
+      }
+    }
+
+    handleFetchAccountManager();
+  }, []);
+
+  // Function to validate input
+  const validateInput = (value, setter) => {
+    value = value.replace(/[^0-9.]/g, "");
+    const parts = value.split(".");
+
+    if (parts.length > 2) {
+      value = parts[0] + "." + parts.slice(1).join("");
+    }
+
+    if (parts[0].length > 1 && !value.includes(".")) {
+      value = parts[0][0] + "." + parts[0].slice(1);
+    }
+
+    if (parts[1] && parts[1].length > 2) {
+      value = parts[0] + "." + parts[1].substring(0, 2);
+    }
+
+    let floatVal = parseFloat(value);
+    if (floatVal > 9.99) {
+      value = "9.99";
+    }
+
+    if (value && floatVal < 0.01) {
+      value = "";
+    }
+
+    setter(value);
+    return value;
+  };
+
+  // =======================================UPDATE USER STATUS START=======================================
+  const [loadingRowId, setLoadingRowId] = useState(null);
+
+  async function handleUpdateUserStatus(row) {
+    if (!row?.srno) return;
+
+    try {
+      setLoadingRowId(row.srno); // start spinner
+      const payload = {
+        userSrno: row?.srno,
+        status: Number(!row?.status),
+      };
+      const res = await updateUserStatusbySrno(payload);
+
+      if (!res?.status) {
+        return toast.error(res?.msg);
+      }
+      toast.success("Status updated successfully");
+
+      await fetchAllUsersDetails();
+      return;
+    } catch (e) {
+      console.log(e);
+      toast.error("Failed to fetch user details. Please try again.");
+    } finally {
+      setLoadingRowId(null); // stop spinner
+    }
+  }
+
+  // =======================================UPDATE USER STATUS END=======================================
+  // =======================================EDIT USER DETAILS START=======================================
+  const [editEditDetailsDialogVisible, setEditDetailsDialogVisible] =
+    useState(false);
+  const [currentUserSrno, setCurrentUserSrno] = useState(null);
+  const [selectedId, setSelectedId] = useState("");
+  const [updateDetails, setUpdateDetails] = useState({
+    domain: "",
+    userId: "",
+    status: "",
+    emailId: "",
+    mobileNo: "",
+    firstName: "",
+    lastName: "",
+    address: "",
+    companyName: "",
+    expiryDate: new Date(),
+    applicationType: "",
+    userType: "",
+    country: "",
+    state: "",
+    city: "",
+    pinCode: "",
+    agentLimit: "",
+  });
+
+  // async function handleGetPincodeData(pincode) {
+  //   if (!pincode || pincode?.length !== 6) return;
+  //   try {
+  //     const res = await getPincodeData(pincode);
+  //     if (!res?.stateName) return;
+
+  //     setUpdateDetails((prev) => ({
+  //       city: res.district,
+  //       state: res?.stateName,
+  //       country: "India",
+  //     }));
+  //   } catch (e) {
+  //     toast.error("Error in Fetching Pincode Data");
+  //   }
+  // }
+
+  async function handleGetPincodeData(pincode) {
+    if (!pincode || pincode.length !== 6) return;
+
+    try {
+      const res = await getPincodeData(pincode);
+
+      if (res?.msg === "Invalid Pincode") {
+        toast.error(res.msg);
+
+        setUpdateDetails((prev) => ({
+          ...prev,
+          city: "",
+          state: "",
+          country: "India",
+        }));
+        return;
+      }
+
+      if (!res?.stateName) {
+        toast.error("Invalid Pincode");
+        return;
+      }
+
+      setUpdateDetails((prev) => ({
+        ...prev,
+        city: res.district,
+        state: res.stateName,
+        country: "India",
+      }));
+    } catch (e) {
+      toast.error("Error in Fetching Pincode Data");
+    }
+  }
+
+  useEffect(() => {
+    if (updateDetails.pinCode?.length === 6) {
+      handleGetPincodeData(updateDetails.pinCode);
+    }
+  }, [updateDetails.pinCode]);
+
+  // const liveDomain = window.location.hostname.replace(/^www\./, '');
+  const liveDomain = "reseller.alertsnow.in";
+
+  const handleEdit = async (srNo) => {
+    try {
+      const response = await fetchUserbySrno(srNo);
+      if (response?.userMstPojoList?.length > 0) {
+        const userDetails = response.userMstPojoList[0];
+
+        const expDate = new Date(userDetails.expiryDate);
+        setUpdateDetails({
+          // domain: userDetails.domain || liveDomain || "",
+          domain: userDetails.domain || "",
+          userId: userDetails.userId || "",
+          status: userDetails.status || "",
+          emailId: userDetails.emailId || "",
+          mobileNo: userDetails.mobileNo || "",
+          firstName: userDetails.firstName || "",
+          lastName: userDetails.lastName || "",
+          address: userDetails.address || "",
+          companyName: userDetails.companyName || "",
+          expiryDate: expDate || new Date(),
+          applicationType: userDetails.applicationType || "",
+          userType: userDetails.userType || "",
+          country: userDetails.country || "",
+          state: userDetails.state || "",
+          city: userDetails.city || "",
+          pinCode: userDetails.pinCode || "",
+          srno: userDetails.srno || "",
+          agentLimit: userDetails.agentLimit || "",
+        });
+        setSelectedId(srNo);
+        setEditDetailsDialogVisible(true);
+      } else {
+        toast.error("No user details found for the selected user.");
+      }
+    } catch (error) {
+      toast.error("Failed to fetch user details. Please try again.");
+    }
+  };
+
+  const handleDetailsUpdate = async () => {
+    const formattedExpiryDate = new Intl.DateTimeFormat("en-GB", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+    }).format(new Date(updateDetails.expiryDate));
+
+    const data = {
+      srno: selectedId,
+      ...updateDetails,
+      expiryDate: formattedExpiryDate,
+      // applicationType: updateDetails?.userType == "1" ? "2" : "1",
+      salePersonId: updateDetails?.accountManager,
+    };
+
+    try {
+      const response = await updateUserbySrno(data);
+      if (response?.msg === "User Updated Successfully") {
+        toast.success("User details updated successfully!");
+        setEditDetailsDialogVisible(false);
+        fetchAllUsersDetails();
+      } else {
+        toast.error(response?.message || "Failed to update user details.");
+      }
+    } catch (error) {
+      toast.error("Failed to update user details. Please try again.");
+    }
+  };
+  // =======================================EDIT USER DETAILS END=======================================
+
+  // =======================================WHATSAPP RATE START=======================================
+  const [whatsapprows, setWhatsapprows] = useState([]);
+  const [whatsappStatus, setWhatsappStatus] = useState("disable");
+  const [whatsappCountry, setWhatsappCountry] = useState(null);
+  const [whatsappUtility, setWhatsappUtility] = useState("");
+  const [whatsappMarketing, setWhatsappMarketing] = useState("");
+  const [whatsappAuthentication, setWhatsappAuthentication] = useState("");
+  const [whatsappDeleteVisible, setWhatsappDeleteVisible] = useState(false);
+  const [selectedWhatsappRow, setSelectedWhatsappRow] = useState(null);
+  const [editingRow, setEditingRow] = useState(null);
+  const [charges, setCharges] = useState(0);
+
+  const [editWhatsappVisible, setEditWhatsappVisible] = useState(false);
+  const [editWhatsappForm, setEditWhatsappForm] = useState({
+    srno: "",
+    userSrno: "",
+    utility: "",
+    marketing: "",
+    countryCode: "",
+    authentication: "",
+  });
+
+  const handleChangewhatsapp = (event) => {
+    setWhatsappStatus(event.target.value);
+  };
+
+  const fetchWhatsappRateData = async (userSrno) => {
+    const res = await getWhatsappRateData(userSrno);
+
+    const list = Array.isArray(res) ? res : res?.data;
+
+    if (Array.isArray(list)) {
+      const formatted = list.map((item, index) => {
+        return {
+          id: item.sr_no || index + 1,
+          sn: index + 1,
+          srno: item.sr_no,
+          userSrno: String(item.user_srno),
+          countryName: item.country_name || item.country_code || "Unknown",
+          countryCode: String(item.country_srno || ""),
+          utility: String(item.transactional || 0),
+          marketing: String(item.promotional || 0),
+          authentication: String(item.authentication || 0),
+          isoCode: String(item.ISO_code || ""),
+          updateTime: item.update_time || "-",
+        };
+      });
+
+      setWhatsapprows(formatted);
+    } else {
+      toast.error("No valid data returned from API");
+    }
+  };
+
+  const handleWhatsappAddCredit = async () => {
+    if (
+      !whatsappCountry ||
+      !whatsappUtility ||
+      !whatsappMarketing ||
+      !whatsappAuthentication
+    ) {
+      toast.error("Please fill all the fields.");
+      return;
+    }
+
+    const payload = {
+      srno: "",
+      userSrno: String(currentUserSrno),
+      utility: String(whatsappUtility),
+      marketing: String(whatsappMarketing),
+      authentication: String(whatsappAuthentication),
+      countryCode: String(whatsappCountry),
+    };
+
+    const res = await saveEditWhatsappRate(payload);
+    if (res?.message) {
+      toast[
+        res.message.toLowerCase().includes("success") ? "success" : "error"
+      ](res.message);
+    }
+
+    if (res?.message?.toLowerCase().includes("success")) {
+      await fetchWhatsappRateData(currentUserSrno);
+      resetWhatsappFields();
+    }
+  };
+
+  const handleWhatsappEdit = async (srno) => {
+    const res = await getWhatsappRateBySrno(srno, currentUserSrno);
+
+    const d = Array.isArray(res) ? res[0] : res?.data?.[0];
+
+    if (d) {
+      setEditWhatsappForm({
+        srno: d.srno ?? srno,
+        userSrno: String(d.user_srno),
+        utility: String(d.transactional),
+        marketing: String(d.promotional),
+        countryCode: String(d.country_srno),
+        authentication: String(d.authentication),
+      });
+
+      setEditWhatsappVisible(true);
+    } else {
+      toast.error("No data found for srno:", srno);
+    }
+  };
+
+  const handleWhatsappUpdate = async () => {
+    const res = await saveEditWhatsappRate(editWhatsappForm);
+    if (res?.message?.toLowerCase().includes("success")) {
+      toast.success("Rate updated successfully");
+      setEditWhatsappVisible(false);
+      fetchWhatsappRateData(currentUserSrno);
+    } else {
+      toast.error(res?.message || "Failed to update");
+    }
+  };
+
+  const handleWhatsappDelete = (srno) => {
+    const row = whatsapprows.find((r) => r.srno === srno);
+    setEditingRow(row);
+    setWhatsappDeleteVisible(true);
+  };
+
+  const confirmWhatsappDelete = async () => {
+    if (!selectedWhatsappRow?.srno) return;
+
+    const res = await deleteWhatsappRateBySrno(selectedWhatsappRow.srno);
+    if (res?.message?.toLowerCase().includes("success")) {
+      toast.success("Rate deleted successfully.");
+      fetchWhatsappRateData(currentUserSrno);
+      setWhatsappDeleteVisible(false);
+      setSelectedWhatsappRow(null);
+    } else {
+      toast.error(res?.message || "Delete failed.");
+    }
+  };
+
+  const resetWhatsappFields = () => {
+    setWhatsappCountry(null);
+    setWhatsappUtility("");
+    setWhatsappMarketing("");
+    setWhatsappAuthentication("");
+  };
+
+  async function handleChargesSave() {
+    try {
+      const data = {
+        userSrno: currentUserSrno,
+        monthlyRate: charges,
+      };
+      const res = await saveCharges(data);
+      if (!res?.msg?.includes("successfully")) {
+        toast.error("Something went wrong");
+        return;
+      }
+      toast.success("Charges updated successfully");
+    } catch (e) {
+      console.log(e);
+    }
+  }
+
+  const whatsaappcolumns = [
+    { field: "sn", headerName: "S.No", flex: 0, Width: 120 },
+    { field: "countryName", headerName: "Country", flex: 1, minWidth: 120 },
+    { field: "utility", headerName: "Utility", flex: 1, minWidth: 120 },
+    {
+      field: "authentication",
+      headerName: "Authentication",
+      flex: 1,
+      minWidth: 120,
+    },
+    { field: "marketing", headerName: "Marketing", flex: 1, minWidth: 150 },
+    { field: "updateTime", headerName: "Updated On", flex: 1, minWidth: 150 },
+    {
+      field: "actions",
+      headerName: "Actions",
+      flex: 1,
+      minWidth: 150,
+      renderCell: (params) => (
+        <>
+          <CustomTooltip arrow title="Edit Rate" placement="top">
+            <IconButton onClick={() => handleWhatsappEdit(params.row.srno)}>
+              <EditNoteIcon sx={{ fontSize: "1.2rem", color: "gray" }} />
+            </IconButton>
+          </CustomTooltip>
+          <CustomTooltip arrow title="Delete Rate" placement="top">
+            <IconButton onClick={() => handleWhatsappDelete(params.row.srno)}>
+              <DeleteForeverIcon sx={{ fontSize: "1.2rem", color: "red" }} />
+            </IconButton>
+          </CustomTooltip>
+        </>
+      ),
+    },
+  ];
+
+  // =======================================WHATSAPP RATE END=======================================
+
+  // =======================================RCS RATE START=======================================
+  const [rcsCountry, setRcsCountry] = useState(null);
+  const [rcsrate, setRcsrate] = useState("");
+  const [editRcsVisible, setEditRcsVisible] = useState(false);
+  const [editRcsData, setEditRcsData] = useState();
+  const [rcsUpdateRate, setRcsUpdateRate] = useState();
+  const [rcsDeleteVisible, setRcsDeleteVisible] = useState(false);
+  const [rcsIsFetching, setRcsIsFetching] = useState(false);
+  const [deletingRcsRow, setDeletingRcsRow] = useState(null);
+  const [rcsrows, setRcsrows] = useState([]);
+
+  useEffect(() => {
+    if (editRcsData?.rate !== undefined) {
+      setRcsUpdateRate(editRcsData.rate.toString());
+    }
+  }, [editRcsData]);
+
+  const fetchRcsRateData = async (userSrno) => {
+    const res = await getRCSRateData(userSrno);
+
+    const list = Array.isArray(res) ? res : res?.data;
+
+    if (Array.isArray(list)) {
+      const formatted = list.map((item, i) => {
+        return {
+          id: i + 1,
+          sn: i + 1,
+          srno: item.sr_no,
+          ...item,
+        };
+      });
+
+      setRcsrows(formatted);
+    } else {
+      toast.error("No valid data returned from API");
+    }
+  };
+
+  const handleRcsAddCredit = async () => {
+    try {
+      const payload = {
+        srno: "",
+        userSrno: String(currentUserSrno),
+        rate: String(rcsrate),
+        country: String(rcsCountry),
+      };
+      const res = await saveEditRcsRate(payload);
+      if (!res?.message?.includes("Successfully")) {
+        toast.error(res?.message);
+        return;
+      }
+      toast.success(res?.message);
+      await fetchRcsRateData(currentUserSrno);
+    } catch (e) {
+      toast.error("Error in adding rcs credit");
+    }
+    setRcsrate("");
+    setRcsCountry("");
+  };
+
+  async function handleRcsEdit(data) {
+    const res = await getRCSRateBySrno(data.sr_no, currentUserSrno);
+    setEditRcsData(res);
+    setEditRcsVisible(true);
+  }
+
+  async function handleRcsDelete(srno) {
+    setRcsIsFetching(true);
+    try {
+      const res = await deleteRCSRateBySrno(
+        deletingRcsRow.sr_no,
+        currentUserSrno
+      );
+      if (!res?.message?.includes("successfully")) {
+        return toast.error(res.message);
+      }
+      setRcsDeleteVisible(false);
+      toast.success(res.message);
+      await fetchRcsRateData(currentUserSrno);
+    } catch (e) {
+      toast.error("Error in deleting rcs credit");
+    } finally {
+      setRcsIsFetching(false);
+    }
+  }
+
+  const handleRcsUpdate = async (srno) => {
+    try {
+      const payload = {
+        srno: editRcsData.srNo,
+        userSrno: String(currentUserSrno),
+        rate: String(rcsUpdateRate),
+        country: String(editRcsData.countrySrNo),
+      };
+      const res = await saveEditRcsRate(payload);
+
+      toast.success(res?.message);
+      await fetchRcsRateData(currentUserSrno);
+      setEditRcsVisible(false);
+    } catch (e) {
+      console.log(e);
+      toast.error("Error in adding rcs credit");
+    }
+  };
+
+  const rcscolumns = [
+    { field: "sn", headerName: "S.No", flex: 0, width: 100 },
+    { field: "country_name", headerName: "Country", flex: 1, minWidth: 120 },
+    { field: "rate", headerName: "Rate", flex: 1, minWidth: 120 },
+    { field: "update_time", headerName: "Updated On", flex: 1, minWidth: 150 },
+    {
+      field: "actions",
+      headerName: "Actions",
+      flex: 1,
+      minWidth: 120,
+      renderCell: (params) => (
+        <>
+          <CustomTooltip arrow title="Edit Rate" placement="top">
+            <IconButton onClick={() => handleRcsEdit(params.row)}>
+              <EditNoteIcon sx={{ fontSize: "1.2rem", color: "gray" }} />
+            </IconButton>
+          </CustomTooltip>
+          <CustomTooltip arrow title="Delete Rate" placement="top">
+            <IconButton
+              onClick={() => {
+                setDeletingRcsRow({
+                  sr_no: params.row.sr_no,
+                  countryName: params.row.country_name,
+                });
+                setRcsDeleteVisible(true);
+              }}
+            >
+              <DeleteForeverIcon sx={{ fontSize: "1.2rem", color: "red" }} />
+            </IconButton>
+          </CustomTooltip>
+        </>
+      ),
+    },
+  ];
+
+  const RcsCustomFooter = () => {
+    return (
+      <GridFooterContainer
+        sx={{
+          display: "flex",
+          flexWrap: "wrap",
+          justifyContent: { xs: "center", lg: "space-between" },
+          alignItems: "center",
+          padding: 1,
+          gap: 2,
+          overflowX: "auto",
+        }}
+      >
+        <Box
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            flexWrap: "wrap",
+            // gap: 1.5,
+          }}
+        >
+          {selectedRows.length > 0 && (
+            <Typography
+              variant="body2"
+              sx={{ borderRight: "1px solid #ccc", paddingRight: "10px" }}
+            >
+              {selectedRows.length} Rows Selected
+            </Typography>
+          )}
+
+          <Typography sx={{ fontSize: "14px" }}>
+            Total Records:
+            <span className="font-semibold">{rcsrows.length}</span>
+          </Typography>
+        </Box>
+
+        <Box
+          sx={{
+            display: "flex",
+            // justifyContent: "center",
+            // width: { xs: "100%", sm: "auto" },
+          }}
+        >
+          {/* <CustomPagination
+            totalPages={totalPages}
+            paginationModel={paginationModel}
+            setPaginationModel={setPaginationModel}
+          
+          /> */}
+        </Box>
+      </GridFooterContainer>
+    );
+  };
+
+  // =======================================RCS RATE END=======================================
+
+  // =======================================SMS RATE START=======================================
+  const [transcheck, setTranscheck] = useState(false);
+  const [promocheck, setPromocheck] = useState(false);
+  const [trans, setTrans] = useState(0);
+  const [promo, setPromo] = useState(0);
+  const [smsrate, setSmsRate] = useState("");
+  const [transOptions, setTransOptions] = useState([]);
+  const [promoOption, setPromoOption] = useState([]);
+  const [dltRate, setDltRate] = useState("");
+  const [smsDeleteVisible, setSMSDeleteVisible] = useState(false);
+  const [smsRows, setSmsRows] = useState([]);
+
+  const resetSmsFields = () => {
+    setTrans(null);
+    setPromo(null);
+    setTranscheck(false);
+    setPromocheck(false);
+    setSmsRate("");
+    setDltRate("");
+  };
+
+  const handleSaveSmsPricing = async () => {
+    // if (!trans) {
+    //   toast.error("Please select transactional service.");
+    //   return;
+    // }
+    // if (!promo) {
+    //   toast.error("Please select promotional service.");
+    //   return;
+    // }
+    const payload = {
+      srno: "",
+      userSrno: String(currentUserSrno),
+      rate: smsrate,
+      dltRate: dltRate || "0",
+      transService: String(trans) || 0,
+      promoService: String(promo) || 0,
+    };
+
+    const res = await addSmsPricing(payload);
+    if (res?.statusCode === 200) {
+      toast.success(res.message || "SMS Pricing saved successfully!");
+      // getSmsRateByUser(currentUserSrno)
+      // resetSmsFields();
+      // setassignRate(false);
+      const d = await getSmsRateByUser(currentUserSrno);
+      // resetSmsFields();
+      // setassignRate(false);
+      // setSmsRows([
+      //   {
+      //     id: 1,
+      //     sn: 1,
+      //     ...d,
+      //     countryName: "India",
+      //   },
+      // ]);
+      const normalizedRows = d.map((item, index) => ({
+        id: index + 1,
+        sn: index + 1,
+        countryName: "India",
+        rate: item.rate,
+        dltRate: item.dlt_rate,
+        updateTime: item.update_time,
+        transService: item.transService || "-",
+        promoService: item.promoService || "-",
+      }));
+      setSmsRows(normalizedRows);
+    } else {
+      toast.error(res.message || "Failed to save SMS Pricing.");
+    }
+  };
+
+  function handleSMSEdit() {
+    const d = smsRows[0];
+
+    setTranscheck(!!d.transService);
+    setPromocheck(!!d.promoService);
+    setTrans(d.transService || null);
+    setPromo(d.promoService || null);
+    setSmsRate(d.rate || "");
+    setDltRate(d.dltRate || "");
+  }
+
+  // const handleRemoveSMSPricing = async () => {
+  //   try {
+  //     const res = await deleteSmsRateByUser(currentUserSrno);
+
+  //     if (res?.status === true) {
+  //       toast.success(res?.message || "Price removed successfully.");
+  //       setSmsRate("");
+  //       setDltRate("");
+  //       setSMSDeleteVisible(false);
+  //     } else {
+  //       toast.error(res?.message || "Failed to remove SMS pricing.");
+  //     }
+  //   } catch (e) {
+  //     console.error(e);
+  //     if (e?.response?.data?.message) {
+  //       toast.error(e.response.data.message);
+  //     } else {
+  //       toast.error("Something went wrong while removing SMS pricing.");
+  //     }
+  //   }
+  // };
+
+  const handleRemoveSMSPricing = async () => {
+    try {
+      const res = await deleteSmsRateByUser(currentUserSrno);
+
+      if (res?.status === true) {
+        toast.success(res?.message || "Price removed successfully.");
+        setSmsRate("");
+        setDltRate("");
+        setSmsRows([]);
+        setSMSDeleteVisible(false);
+      } else {
+        toast.error(res?.message || "Failed to remove SMS pricing.");
+      }
+    } catch (e) {
+      console.error(e);
+      if (e?.response?.data?.message) {
+        toast.error(e.response.data.message);
+      } else {
+        toast.error("Something went wrong while removing SMS pricing.");
+      }
+    }
+  };
+
+  const smsCol = [
+    { field: "sn", headerName: "S.No", flex: 0, Width: 70 },
+    { field: "countryName", headerName: "Country", flex: 1, minWidth: 120 },
+    { field: "rate", headerName: "Rate", flex: 1, minWidth: 120 },
+    {
+      field: "dltRate",
+      headerName: "DLT Rate",
+      flex: 1,
+      minWidth: 120,
+    },
+    {
+      field: "transService",
+      headerName: "Transactional",
+      flex: 1,
+      minWidth: 150,
+    },
+    {
+      field: "promoService",
+      headerName: "Promotional",
+      flex: 1,
+      minWidth: 150,
+    },
+    { field: "updateTime", headerName: "Updated On", flex: 1, minWidth: 150 },
+    {
+      field: "actions",
+      headerName: "Actions",
+      flex: 1,
+      minWidth: 120,
+      renderCell: (params) => (
+        <>
+          <CustomTooltip arrow title="Edit Rate" placement="top">
+            <IconButton onClick={() => handleSMSEdit()}>
+              <EditNoteIcon sx={{ fontSize: "1.2rem", color: "gray" }} />
+            </IconButton>
+          </CustomTooltip>
+          <CustomTooltip arrow title="Delete Rate" placement="top">
+            <IconButton onClick={() => setSMSDeleteVisible(true)}>
+              <DeleteForeverIcon sx={{ fontSize: "1.2rem", color: "red" }} />
+            </IconButton>
+          </CustomTooltip>
+        </>
+      ),
+    },
+  ];
+  // =======================================SMS RATE END=======================================
+
+  // =======================================OBD RATE START=======================================
+  const [transcheckobd, setTranscheckobd] = useState(false);
+  const [promocheckobd, setPromocheckobd] = useState(false);
+  const [transobd, setTransobd] = useState(null);
+  const [promoobd, setPromoobd] = useState(null);
+  const [obdrate, setObdRate] = useState("");
+  const [obdrateStatus, setObdRateStatus] = useState("disable");
+  const [voicerows, setVoicerows] = useState([]);
+  const [editOBDVoiceVisible, setEditOBDVoiceVisible] = useState(false);
+  const [editOBDVoiceForm, setEditOBDVoiceForm] = useState({});
+
+  const [assignService, setAssignService] = useState(false);
+
+  const handleChangeobdRate = (event) => {
+    setObdRateStatus(event.target.value);
+  };
+
+  const fetchObdRateData = async (userSrno) => {
+    // const res = await getVoiceRateBySrno(userSrno);
+    // if (res?.message?.includes("Record not found")) {
+    //   return;
+    // }
+    const res = await getVoiceRateByUser(userSrno);
+
+    if (
+      res?.response?.data?.message?.includes("Record not found with userSrno ")
+    ) {
+      setVoicerows([]);
+      return;
+    }
+
+    const formatted = [
+      {
+        id: 1,
+        sn: 1,
+        srno: res.srNo,
+        ...res,
+      },
+    ];
+    setVoicerows(formatted);
+  };
+
+  async function handleSaveOBDPricing() {
+    try {
+      const payload = {
+        srNo: "",
+        userSrNo: currentUserSrno,
+        voicePlan: obdrateStatus === "enable" ? 1 : 2,
+        voiceRate: 0,
+        voiceRate2: 0,
+      };
+      obdrateStatus === "enable"
+        ? (payload.voiceRate = Number(obdrate))
+        : (payload.voiceRate2 = Number(obdrate));
+      const res = await saveVoiceRate(payload);
+
+      if (!res?.message.includes("successfully")) {
+        return toast.error(res.message);
+      }
+      toast.success(res.message);
+      await fetchObdRateData(currentUserSrno);
+    } catch (e) {
+      toast.error("Error in saving obd pricing");
+    }
+  }
+
+  async function handleOBDEdit(srno) {
+    const res = await getVoiceRateBySrno(srno, currentUserSrno);
+
+    const desiredData = {
+      obdrate: res?.voicePlan === 2 ? res?.voiceRate2 : res?.voiceRate,
+      obdrateStatus: res?.voicePlan === 2 ? "disable" : "enable",
+      srno,
+    };
+
+    setEditOBDVoiceForm(desiredData);
+    setEditOBDVoiceVisible(true);
+  }
+
+  async function handleObdUpdate(srno) {
+    if (!editOBDVoiceForm?.srno) return;
+    try {
+      const payload = {
+        srNo: editOBDVoiceForm?.srno,
+        userSrNo: currentUserSrno,
+        voicePlan: editOBDVoiceForm.obdrateStatus === "enable" ? 1 : 2,
+        voiceRate: 0,
+        voiceRate2: 0,
+      };
+      editOBDVoiceForm.obdrateStatus === "enable"
+        ? (payload.voiceRate = Number(editOBDVoiceForm.obdrate))
+        : (payload.voiceRate2 = Number(editOBDVoiceForm.obdrate));
+      const res = await saveVoiceRate(payload);
+
+      if (!res?.message.includes("successfully")) {
+        return toast.error(res.message);
+      }
+      toast.success(res.message);
+      await fetchObdRateData(currentUserSrno);
+      setEditOBDVoiceVisible(false);
+    } catch (e) {
+      toast.error("Error in saving obd pricing");
+    }
+  }
+
+  async function handleObdDelete(srno) {
+    try {
+      const res = await deleteVoiceRateBySrno(srno, currentUserSrno);
+      if (!res?.message?.includes("Successfully")) {
+        return toast.error(res.message);
+      }
+      toast.success(res.message);
+      await fetchObdRateData(currentUserSrno);
+    } catch (e) {
+      console.log(e);
+      toast.error("Error in deleting obd credit");
+    }
+  }
+
+  const voiceCols = [
+    { field: "sn", headerName: "S.No", flex: 0, width: 120 },
+    {
+      field: "type",
+      headerName: "Type",
+      flex: 1,
+      minWidth: 120,
+      renderCell: (params) => {
+        if (params.row.voicePlan === 1) {
+          return "15sec";
+        } else {
+          return "30sec";
+        }
+      },
+    },
+
+    {
+      field: "rate",
+      headerName: "Rate",
+      flex: 1,
+      minWidth: 100,
+      renderCell: (params) => {
+        if (params.row.voicePlan === 2) {
+          return params.row.voiceRate2;
+        } else {
+          return params.row.voiceRate;
+        }
+      },
+    },
+    { field: "updateTime", headerName: "Updated On", flex: 1, minWidth: 180 },
+    {
+      field: "actions",
+      headerName: "Actions",
+      flex: 1,
+      minWidth: 150,
+      renderCell: (params) => (
+        <>
+          <CustomTooltip arrow title="Edit Rate" placement="top">
+            <IconButton onClick={() => handleOBDEdit(params.row.srNo)}>
+              <EditNoteIcon sx={{ fontSize: "1.2rem", color: "gray" }} />
+            </IconButton>
+          </CustomTooltip>
+          <CustomTooltip arrow title="Delete Rate" placement="top">
+            <IconButton onClick={() => handleObdDelete(params.row?.srNo)}>
+              <DeleteForeverIcon sx={{ fontSize: "1.2rem", color: "red" }} />
+            </IconButton>
+          </CustomTooltip>
+        </>
+      ),
+    },
+  ];
+  // =======================================OBD RATE END=======================================
+
+  // =======================================NumberLookUp RATE Start=======================================
+  const [numberLookupRate, setNumberLookupRate] = useState("");
+  const [savedNumberLookupRate, setSavedNumberLookupRate] = useState("");
+  const [numberLookupInsertTime, setNumberLookupInsertTime] = useState("");
+  const [numberLookupRateDeleteVisible, setNumberLookupRateDeleteVisible] =
+    useState(false);
+
+  // SAVE Rate
+  async function handleNumberLookupSave() {
+    if (!numberLookupRate) {
+      return toast.error("Please enter Number Lookup Rate");
+    }
+    try {
+      const data = {
+        userSrno: currentUserSrno,
+        rate: numberLookupRate,
+      };
+
+      const res = await addEditHlrPricing(data);
+
+      if (!res?.msg?.includes("successfully")) {
+        toast.error("Number Lookup Rate saving failed");
+      } else {
+        toast.success("Number Lookup Rate update successfully");
+
+        // setNumberLookupRate(res?.Rate);
+        // setNumberLookupInsertTime(res?.InsertTime)
+        handleFetchLookUpRate(currentUserSrno);
+      }
+    } catch (error) {
+      toast.error("Failed to update Number Lookup Rate");
+    }
+  }
+
+  async function handleFetchLookUpRate(userSrno) {
+    try {
+      const res = await getHlrPricing(userSrno);
+      setNumberLookupRate(res?.Rate);
+      setNumberLookupInsertTime(res?.InsertTime);
+    } catch (e) {
+      toast.error("Failed to get Number Lookup Rate");
+    }
+  }
+  // Delete Rate
+  async function handleNumberLookupRateDelete(userSrno) {
+    try {
+      const res = await deleteHlrPricing({ userSrno: currentUserSrno });
+      if (!res?.msg?.includes("successfully")) {
+        return toast.error(res?.msg || "Number Lookup Rate deletion failed");
+      } else {
+        setNumberLookupRateDeleteVisible(false);
+        toast.success("Number Lookup Rate deleted successfully");
+        setNumberLookupRate("");
+        handleFetchLookUpRate(currentUserSrno);
+      }
+    } catch (error) {
+      toast.error("Failed to delete Number Lookup Rate");
+    }
+  }
+
+  // =======================================NumberLookUp RATE END=======================================
+
+  // =======================================TWO-WAY-SMS RATE START=======================================
+  const [twowayStatus, setTwoWayStatus] = useState("disable");
+  const [twowayAssign, setTwowayAssign] = useState(null);
+  const twowayOptions = [
+    { value: "3 Months", label: "3 Months" },
+    { value: "6 Months", label: "6 Months" },
+    { value: "12 Months", label: "12 Months" },
+  ];
+
+  const handleChangetwoway = (event) => {
+    setTwoWayStatus(event.target.value);
+  };
+  // =======================================TWO-WAY-SMS RATE END=======================================
+
+  // =======================================MISSED-CALL RATE START=======================================
+  const [misscallStatus, setMisscallStatus] = useState("disable");
+  const [misscallAssign, setMisscallAssign] = useState(null);
+  const misscallOptions = [
+    { value: "3 Months", label: "3 Months" },
+    { value: "6 Months", label: "6 Months" },
+    { value: "12 Months", label: "12 Months" },
+  ];
+
+  const handleChangeMisscall = (event) => {
+    setMisscallStatus(event.target.value);
+  };
+  // =======================================MISSED-CALL RATE END=======================================
+
+  // =======================================CLICK-TO-CALL RATE START=======================================
+  const [clickStatus, setClickStatus] = useState("disable");
+  const handleChangeClick = (event) => {
+    setClickStatus(event.target.value);
+  };
+  // =======================================CLICK-TO-CALL RATE END=======================================
+
+  // =======================================EMAIL RATE START=======================================
+  const [emailStatus, setEmailStatus] = useState("disable");
+  const [emailAssign, setEmailAssign] = useState(null);
+
+  const emailOptions = [
+    { value: "3 Months", label: "3 Months" },
+    { value: "6 Months", label: "6 Months" },
+    { value: "12 Months", label: "12 Months" },
+  ];
+
+  const handleChangeEmail = (event) => {
+    setEmailStatus(event.target.value);
+  };
+  // =======================================EMAIL RATE END=======================================
+
+  // =======================================IBD RATE START=======================================
+  const [ibdStatus, setIbdStatus] = useState("disable");
+  const [ibdpulseStatus, setibdPulseStatus] = useState("disable");
+  const [ibdAssign, setIbdAssign] = useState(null);
+
+  const ibdOptions = [
+    { value: "3 Months", label: "3 Months" },
+    { value: "6 Months", label: "6 Months" },
+    { value: "12 Months", label: "12 Months" },
+  ];
+
+  const handleChangeIbd = (event) => {
+    setIbdStatus(event.target.value);
+  };
+
+  const handleChangeibdPulse = (event) => {
+    setibdPulseStatus(event.target.value);
+  };
+  // =======================================IBD RATE END=======================================
+
+  const [accountUrl, setAccountUrl] = useState("");
+  const [isReadOnly, setIsReadOnly] = useState(true);
+  const [userType, setUserType] = useState("");
+
+  useEffect(() => {
+    setIsReadOnly(userType !== "Reseller");
+    setAccountUrl("");
+  }, [userType]);
+
+  const [enablepostpaid, setEnablePostpaid] = useState("disable");
+  const handleChangeEnablePostpaid = (event) => {
+    setEnablePostpaid(event.target.value);
+  };
+
+  const [editstatusStatus, setEditStatusStatus] = useState("disable");
+  const handleChangeEditStatus = (event) => {
+    setEditStatusStatus(event.target.value);
+  };
+
+  //=======================================GENERATE API KEY START=======================================
+  const [newAPIKey, setNewAPIKey] = useState("");
+  const [manageApiKeys, setManageApiKeys] = useState(false);
+  const [oldKey, setOldKey] = useState("");
+
+  // Function to generate an API key with only lowercase letters and numbers.
+  const generateAPIKey = (length = 10) => {
+    const charset = "abcdefghijklmnopqrstuvwxyz0123456789";
+    let key = "";
+    for (let i = 0; i < length; i++) {
+      key += charset.charAt(Math.floor(Math.random() * charset.length));
+    }
+    return key + "XX";
+  };
+
+  const handleGenerateAPIKey = async () => {
+    try {
+      const params = `?userSrno=${selectedId}`;
+      const res = await getApiKey(params);
+      setNewAPIKey(res?.Key);
+    } catch (e) {
+      toast.error("Something went wrong");
+    }
+  };
+
+  async function handleApiKeySave() {
+    if (!newAPIKey) {
+      return toast.error("Please generate API Key");
+    }
+    const data = {
+      oldKey: oldKey,
+      newKey: newAPIKey,
+      userSrno: selectedId,
+    };
+    try {
+      const res = await updateApiKey(data.newKey, data.userSrno);
+      if (!res?.message.includes("succesfully")) {
+        return toast.error(res?.message);
+      }
+      toast.success("API Key updated successfully");
+      setManageApiKeys(false);
+      setNewAPIKey("");
+      setOldKey("");
+    } catch (e) {
+      toast.error("Something went wrong");
+    }
+  }
+
+  const handleApikey = async (id, name) => {
+    try {
+      const params = `?userSrno=${id}`;
+      const res = await getOldApiKey(params);
+      setOldKey(res?.oldkey);
+      setManageApiKeys(true);
+      setSelectedId(id);
+    } catch (e) {
+      toast.error("Failed to fetch user details. Please try again.");
+    }
+  };
+
+  //=======================================GENERATE API KEY END=======================================
+
+  // //=======================================ADD 2FA MOBILE NUMBER START=======================================
+  // const [mobileNumbers, setMobileNumbers] = useState([""]);
+  // const [otpService, setOtpService] = useState(false);
+
+  // // Add new input field (Max 5)
+  // const addMobileNumber = () => {
+  //   if (mobileNumbers.length >= 5) {
+  //     toast.error("You can add a maximum of 5 mobile numbers.");
+  //     return;
+  //   }
+  //   setMobileNumbers([...mobileNumbers, ""]);
+  // };
+
+  // async function saveMobileNumber() {
+  //   try {
+  //     const isEmpty = mobileNumbers.some((number) => !number.trim());
+
+  //     if (isEmpty) {
+  //       toast.error("Please enter mobile number in all inputs.");
+  //       return;
+  //     }
+  //     const mbNo = mobileNumbers.join(",");
+  //     const payload = {
+  //       mbno: mbNo,
+  //       userSrno: selectedId,
+  //     };
+  //     const res = await addMobileNumbers(payload);
+  //     if (!res?.msg.includes("successfully")) {
+  //       toast.error(res?.msg);
+  //     }
+  //     toast.success("Mobile number updated successfully");
+  //     setOtpService(false);
+  //   } catch (e) {
+  //     toast.error(e?.message || "Failed to update");
+  //   }
+  // }
+
+  // const removeMobileNumber = (index) => {
+  //   const updatedNumbers = mobileNumbers.filter((_, i) => i !== index);
+  //   setMobileNumbers(updatedNumbers);
+  // };
+
+  // const handleInputChange = (index, value) => {
+  //   const updatedNumbers = [...mobileNumbers];
+  //   updatedNumbers[index] = value;
+  //   setMobileNumbers(updatedNumbers);
+  // };
+
+  // const handleOtp = (id) => {
+  //   setOtpService(true);
+  //   setSelectedId(id);
+  // };
+
+  // useEffect(() => {
+  //   if (!selectedId) return;
+  //   async function fetchMobileNo() {
+  //     try {
+  //       const res = await getMobileNumbers(selectedId);
+  //       const mobile = res?.regMoblienos?.split(",");
+  //       setMobileNumbers(mobile || [""]);
+  //       // setotp
+  //     } catch (e) {
+  //       return toast.error(e.message);
+  //     }
+  //   }
+  //   fetchMobileNo();
+  // }, [otpService]);
+
+  // //=======================================ADD 2FA MOBILE NUMBER END=======================================
+
+  //=======================================ADD 2FA MOBILE NUMBER START=======================================
+  const [mobileNumbers, setMobileNumbers] = useState([
+    { code: "", number: "" },
+  ]);
+  const [otpService, setOtpService] = useState(false);
+  const [saveOtpService, setSaveOtpService] = useState(false);
+  const [countryCodes, setCountryCodes] = useState([]);
+  const [mobileCode, setMobileCode] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
+
+  // Add new input field (Max 5)
+  const addMobileNumber = () => {
+    if (mobileNumbers.length >= 5) {
+      toast.error("You can add a maximum of 5 mobile numbers.");
+      return;
+    }
+    setMobileNumbers([...mobileNumbers, { code: "", number: "" }]);
+  };
+
+  // async function saveMobileNumber() {
+  //   try {
+  //     const isEmpty = mobileNumbers.some((number) => !number?.number.trim());
+  //     const isCodeEmpty = mobileNumbers.some((number) => !number?.code.trim());
+
+  //     if (isEmpty || isCodeEmpty) {
+  //       toast.error("Please enter mobile number in all inputs.");
+  //       return;
+  //     }
+
+  //     let updatedNumbers = mobileNumbers.code + mobileNumbers.number
+  //     const mbNo = updatedNumbers.join(",");
+  //     const payload = {
+  //       mbno: mbNo,
+  //       userSrno: selectedId,
+  //     };
+  //     const res = await addMobileNumbers(payload);
+  //     if (!res?.msg.includes("successfully")) {
+  //       toast.error(res?.msg);
+  //     }
+  //     toast.success("Mobile number updated successfully");
+  //     setOtpService(false);
+  //   } catch (e) {
+  //     toast.error(e?.message || "Failed to update");
+  //   }
+  // }
+
+  async function saveMobileNumber() {
+    setSaveOtpService(true);
+    try {
+      const isEmpty = mobileNumbers.some((item) => !item?.number?.trim());
+      const isCodeEmpty = mobileNumbers.some((item) => !item?.code);
+
+      if (isEmpty || isCodeEmpty) {
+        toast.error(
+          "Please enter country code and mobile number in all inputs."
+        );
+        return;
+      }
+
+      // Combine code + number for each entry
+      const updatedNumbers = mobileNumbers.map(
+        (item) => `${item.code}${item.number}`
+      );
+
+      // Join into comma-separated string
+      const mbNo = updatedNumbers.join(",");
+
+      const payload = {
+        mbno: mbNo,
+        userSrno: selectedId,
+      };
+
+      const res = await addMobileNumbers(payload);
+
+      if (!res?.msg?.includes("successfully")) {
+        toast.error(res?.msg || "Failed to update");
+        return;
+      }
+
+      toast.success("Mobile number updated successfully");
+      setOtpService(false);
+    } catch (e) {
+      toast.error(e?.message || "Failed to update");
+    } finally {
+      setSaveOtpService(false);
+    }
+  }
+
+  //   const removeMobileNumber = (index) => {
+  //     const updatedNumbers = mobileNumbers.filter((_, i) => i !== index);
+  //     setMobileNumbers(updatedNumbers);
+  //   };
+
+  //   const handleCountryCodeChange = (index, value) => {
+  //   const updated = [...mobileNumbers];
+  //   updated[index].code = value;
+  //   setMobileNumbers(updated);
+  // };
+
+  // const handleInputChange = (index, value) => {
+  //   const updated = [...mobileNumbers];
+  //   updated[index].number = value;
+  //   setMobileNumbers(updated);
+  // };
+
+  const removeMobileNumber = (index) => {
+    setMobileNumbers((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const handleCountryCodeChange = (index, value) => {
+    setMobileNumbers((prev) =>
+      prev.map((item, i) => (i === index ? { ...item, code: value } : item))
+    );
+  };
+
+  const handleInputChange = (index, value) => {
+    setMobileNumbers((prev) =>
+      prev.map((item, i) => (i === index ? { ...item, number: value } : item))
+    );
+  };
+
+  const handleOtp = (id) => {
+    setOtpService(true);
+    setSelectedId(id);
+  };
+
+  const splitNumber = (fullNumber = "") => {
+    const digits = fullNumber.replace(/\D/g, ""); // remove non-digits
+    const number = digits.slice(-10); // last 10 digits
+    const code = digits.slice(0, digits.length - 10); // prefix
+    return { code, number };
+  };
+  // useEffect(() => {
+  //   if (!selectedId) return;
+  //   async function fetchMobileNo() {
+  //     try {
+  //       const res = await getMobileNumbers(selectedId);
+  //       const mobile = res?.regMoblienos?.split(",");
+  //       const formatted = mobile.map((num) => ({
+  //         code: "",
+  //         number: num.trim(),
+  //       }));
+  //       setMobileNumbers(
+  //         formatted.length ? formatted : [{ code: "", number: "" }]
+  //       );
+  //     } catch (e) {
+  //       return toast.error(e.message);
+  //     }
+  //   }
+  //   fetchMobileNo();
+  // }, [otpService]);
+
+  useEffect(() => {
+    if (!selectedId) return;
+
+    async function fetchMobileNo() {
+      try {
+        setIsLoading(true);
+        const res = await getMobileNumbers(selectedId);
+
+        const mobile = res?.regMoblienos?.split(","); // ["919876543210", "15551234567"]
+
+        const formatted = (mobile || []).map((m) => splitNumber(m));
+
+        setMobileNumbers(
+          formatted.length ? formatted : [{ code: "", number: "" }]
+        );
+
+        // also update mobileCode array (only the codes)
+        setMobileCode(formatted.map((item) => item.code));
+      } catch (e) {
+        toast.error(e.message || "Failed to fetch numbers");
+      } finally {
+        setIsLoading(false);
+      }
+    }
+
+    fetchMobileNo();
+  }, [otpService]);
+
+  // Get country list
+  useEffect(() => {
+    const fetchCountryList = async () => {
+      try {
+        setIsLoading(true);
+
+        const response = await getCountryList();
+        if (response) {
+          // getCountryList(response);
+          setCountryCodes(response);
+        } else {
+          console.error("Failed to fetch Country List!");
+          toast.error("Failed to load Country List");
+        }
+      } catch (error) {
+        console.error("Error fetching country List:", error);
+        toast.error("Error fetching country List.");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchCountryList();
+  }, []);
+
+  const formattedCountryOptions = countryCodes.map((c) => ({
+    value: c.countryCode.toString(),
+    label: `+${c.countryCode} - ${c.countryName}`,
+  }));
+
+  //=======================================ADD 2FA MOBILE NUMBER END=======================================
+
+  //=======================================USER LOGIN START=======================================
+  const [logins, setLogins] = useState(false);
+
+  const handleChange = (event, newValue) => {
+    setValue(newValue);
+  };
+
+  const handleLonins = (id) => {
+    setLogins(true);
+  };
+  //=======================================USER LOGIN END=======================================
+
+  //=======================================FETCH USER BALANCE START=======================================
+  const [userBalance, setUserBalance] = useState([]);
+  const [userBalanceDialogVisible, setUserBalanceDialogVisible] = useState({
+    isOpen: false,
+    balance: 0,
+    userId: ""
+  });
+
+  const handleFetchBalance = async (id, userId) => {
+    try {
+      const res = await fetchBalance(id);
+      // const data = {
+      //   id,
+      //   balance: res?.balance || 0,
+      // };
+      // const updatedBalance = [...userBalance];
+      // if (updatedBalance.findIndex((item) => item.id === id) != "-1") {
+      //   updatedBalance[updatedBalance.findIndex((item) => item.id === id)] =
+      //     data;
+      // } else {
+      //   updatedBalance.push(data);
+      // }
+      // setUserBalance(updatedBalance);
+      setUserBalanceDialogVisible({ isOpen: true, balance: res?.balance, rechargableCredit: res?.rechargableCredit, userId: userId });
+    } catch (e) {
+      toast.error("Error in fetching balance");
+    }
+  };
+  //=======================================FETCH USER BALANCE END=======================================
+
+  //=======================================VIEW USER DETAILS START=======================================
+
+  //=======================================VIEW USER DETAILS END=======================================
+  const [selectedUserDetails, setSelectedUserDetails] = useState(null);
+  const [viewService, setViewService] = useState(false);
+
+  // view user details
+  const handleView = async (srNo) => {
+    try {
+      const response = await fetchUserbySrno(srNo);
+      if (response?.userMstPojoList?.length > 0) {
+        setSelectedUserDetails(response.userMstPojoList[0]);
+        setViewService(true);
+      } else {
+        toast.error("No user details found for the selected user.");
+      }
+    } catch (error) {
+      toast.error("Failed to fetch user details. Please try again.");
+    }
+  };
+
+  //=======================================ASSIGN SERVICE START=======================================
+  const allServices = [
+    {
+      id: 1,
+      name: "SMS",
+      enable: 0,
+      disabled: false,
+    },
+    {
+      id: 2,
+      name: "WHATSAPP",
+      enable: 0,
+      disabled: false,
+    },
+    {
+      id: 3,
+      name: "RCS",
+      enable: 0,
+      disabled: false,
+    },
+    {
+      id: 7,
+      name: "OBD",
+      enable: 0,
+      disabled: false,
+    },
+    {
+      id: 8,
+      name: "HLR",
+      enable: 0,
+      disabled: true,
+    },
+    {
+      id: 9,
+      name: "EMAIL",
+      enable: 0,
+      disabled: true,
+    },
+    {
+      id: "",
+      name: "Two Way",
+      enable: 0,
+      disabled: true,
+    },
+    {
+      id: "",
+      name: "Missed Call",
+      enable: 0,
+      disabled: true,
+    },
+    {
+      id: "",
+      name: "C2C",
+      enable: 0,
+      disabled: true,
+    },
+    {
+      id: "",
+      name: "IBD",
+      enable: 0,
+      disabled: true,
+    },
+  ];
+
+  const handleService = async (srno) => {
+    setAssignService(true);
+    setCurrentUserSrno(srno);
+  };
+  const [assignServiceLoading, setAssignServiceLoading] = useState(false);
+
+  function handleServiceChange(e) {
+    const { id, checked } = e.target;
+
+    const updatedService = enableServices.map((item) =>
+      item.id == id ? { ...item, enable: checked } : item
+    );
+
+    setEnableServices(updatedService);
+  }
+  // const handleAssignService = async () => {
+  //   await Promise.all(
+  //     enableServices.map((item) => {
+  //       if (!item.id) return;
+  //       const payload = {
+  //         userSrNo: String(currentUserSrno),
+  //         allowService: item.enable === true ? 1 : 0,
+  //         serviceTypeSrNo: String(item.id),
+  //       };
+  //       return saveServicesByUser(payload);
+  //     })
+  //   );
+  //   toast.success("Services assigned successfully");
+  //   setAssignService(false);
+  // };
+
+  const handleAssignService = async () => {
+    if (!enableServices?.length) return;
+
+    setAssignServiceLoading(true); // Start loading
+    try {
+      await Promise.all(
+        enableServices.map((item) => {
+          if (!item.id) return null;
+          const payload = {
+            userSrNo: String(currentUserSrno),
+            allowService: item.enable === true ? 1 : 0,
+            serviceTypeSrNo: String(item.id),
+          };
+          return saveServicesByUser(payload);
+        })
+      );
+
+      toast.success("Services assigned successfully");
+      setAssignService(false);
+    } catch (error) {
+      console.error(error);
+      toast.error(
+        error?.message || "Failed to assign services. Please try again."
+      );
+    } finally {
+      setAssignServiceLoading(false); // Stop loading
+    }
+  };
+  //=======================================ASSIGN SERVICE END=======================================
+
+  //=======================================ASSIGN RATE DIALOG START=======================================
+  const [assignRate, setassignRate] = useState(false);
+
+  const handleAssign = async (srNo) => {
+    setassignRate(true);
+    setCurrentUserSrno(srNo);
+
+    setTimeout(() => {
+      fetchWhatsappRateData(srNo);
+    }, 0);
+
+    const [
+      transRes,
+      promoRes,
+      userSmsData,
+      countryListRes,
+      whatsappRateRes,
+      rcsRateRes,
+      obdRateRes,
+      chargesRes,
+      // numberLookup,
+      hlrPricing,
+    ] = await Promise.all([
+      getTransServices(),
+      getPromoServices(),
+      getSmsRateByUser(srNo),
+      getCountryList(),
+      getWhatsappRateData(srNo),
+      getRCSRateData(srNo),
+      getVoiceRateByUser(srNo),
+      getCharges(srNo),
+      // getNumberLookupRate(srNo),
+      getHlrPricing(srNo),
+    ]);
+
+    setNumberLookupRate(hlrPricing?.Rate);
+    setNumberLookupInsertTime(hlrPricing?.InsertTime);
+
+    // Country List
+    if (countryListRes) {
+      setCountryOptions(
+        countryListRes.map((item) => ({
+          label: item.countryName,
+          value: item.srNo,
+        }))
+      );
+    }
+
+    // Transaction
+    setTransOptions(
+      (transRes || []).map((item) => ({
+        label: item.serviceName,
+        value: String(item.serviceId),
+      }))
+    );
+
+    // Promotion
+    setPromoOption(
+      (promoRes || []).map((item) => ({
+        label: item.serviceName,
+        value: String(item.serviceId),
+      }))
+    );
+
+    // set SMS data
+    // if (userSmsData?.data) {
+    //   const d = userSmsData.data;
+    //   setTranscheck(!!d.transService);
+    //   setPromocheck(!!d.promoService);
+    //   setTrans(d.transService || null);
+    //   setPromo(d.promoService || null);
+    //   setSmsRate(d.rate || "");
+    //   setDltRate(d.dltRate || "");
+    // }
+
+    // set SMS data
+    const d = Array.isArray(userSmsData)
+      ? userSmsData?.map((item, index) => ({
+        id: index + 1,
+        sn: index + 1,
+        countryName: "India",
+        rate: item.rate,
+        dltRate: item.dlt_rate,
+        updateTime: item.update_time,
+        transService: item.transService,
+        promoService: item.promoService,
+      }))
+      : [];
+    setSmsRows(d);
+    // set SMS data
+    // if (userSmsData) {
+    //   const d = userSmsData;
+    //   setSmsRows([
+    //     {
+    //       id: 1,
+    //       sn: 1,
+    //       ...d,
+    //       countryName: "India",
+    //     },
+    //   ]);
+    // }
+
+    // set WhatsApp table data
+    if (whatsappRateRes?.data) {
+      setWhatsapprows(whatsappRateRes.data);
+    }
+    const rcsRowss = Array.isArray(rcsRateRes)
+      ? rcsRateRes.map((item, index) => ({
+        id: index + 1,
+        sn: index + 1,
+        srno: item.sr_no,
+        ...item,
+      }))
+      : [];
+    rcsRateRes.length > 0 && setRcsrows(rcsRowss);
+
+    // const voiceRows = Array.isArray(obdRateRes)
+    //   ? obdRateRes.map((item, index) => ({
+    //     id: index + 1,
+    //     sn: index + 1,
+    //     ...item,
+    //   }))
+    //   : [];
+    obdRateRes.status !== 404 &&
+      setVoicerows([
+        {
+          id: 1,
+          sn: 1,
+          srno: obdRateRes?.srNo,
+          ...obdRateRes,
+        },
+      ]);
+
+    // obdRateRes && setVoicerows(voiceRows);
+    setCharges(chargesRes?.MonthlyRate || "0");
+  };
+
+  //=======================================ASSIGN RATE DIALOG END=======================================
+
+  //=======================================ADD-UPDATE SERVICES START=======================================
+
+  const [enableServices, setEnableServices] = useState([
+    {
+      id: 1,
+      name: "SMS",
+      enable: false,
+    },
+    {
+      id: 2,
+      name: "WHATSAPP",
+      enable: false,
+    },
+    {
+      id: 3,
+      name: "RCS",
+      enable: false,
+    },
+    {
+      id: 7,
+      name: "OBD",
+      enable: false,
+    },
+    {
+      id: 8,
+      name: "HLR",
+      enable: false,
+    },
+    {
+      id: 9,
+      name: "EMAIL",
+      enable: false,
+    },
+    {
+      id: "",
+      name: "Two Way",
+      enable: false,
+    },
+    {
+      id: "",
+      name: "Missed Call",
+      enable: false,
+    },
+    {
+      id: "",
+      name: "C2C",
+      enable: false,
+    },
+    {
+      id: "",
+      name: "IBD",
+      enable: false,
+    },
+  ]);
+
+  useEffect(() => {
+    async function handleGetAllowedServices() {
+      if (!currentUserSrno) return;
+      try {
+        const data = `?userSrno=${currentUserSrno}`;
+        const res = await getAllowedServices(data);
+
+        const formattedData = [
+          { id: 1, name: "SMS", enable: false },
+          { id: 2, name: "WHATSAPP", enable: false },
+          { id: 3, name: "RCS", enable: false },
+          { id: 7, name: "OBD", enable: false },
+          { id: "", name: "Two Way", enable: false },
+          { id: "", name: "Missed Call", enable: false },
+          { id: "", name: "C2C", enable: false },
+          { id: "", name: "IBD", enable: false },
+          { id: 8, name: "HLR", enable: false },
+          { id: 9, name: "EMAIL", enable: false },
+
+        ];
+
+        const entriesWithId = formattedData.filter((item) => item.id !== "");
+        const entriesWithoutId = formattedData.filter((item) => item.id === "");
+
+        const formattedMap = new Map(
+          entriesWithId.map((item) => [item.id, item])
+        );
+
+        res?.forEach((item) => {
+          const id = item.service_type_id;
+          const name = item.display_name;
+
+          if (formattedMap.has(id)) {
+            const existing = formattedMap.get(id);
+            existing.enable = true;
+            existing.name = name;
+          } else {
+            formattedMap.set(id, { id, name, enable: true });
+          }
+        });
+
+        const updatedFormattedData = [
+          ...Array.from(formattedMap.values()),
+          ...entriesWithoutId,
+        ];
+
+        setEnableServices(updatedFormattedData);
+      } catch (e) {
+        toast.error("Something went wrong");
+      }
+    }
+    handleGetAllowedServices();
+  }, [assignService, assignRate]);
+
+  //=======================================ADD-UPDATE SERVICES END=======================================
+
+  //=======================================ENABLE USER REPORT START=======================================
+  const [userReports, setuserReports] = useState("");
+  const [userreportStatus, setUserReportStatus] = useState("disable");
+  const handleChangeuserreport = (event) => {
+    setUserReportStatus(event.target.value);
+  };
+
+  const handleReport = (id, name) => {
+    setuserReports(true);
+  };
+  //=======================================ENABLE USER REPORT END=======================================
+
+  //=======================================MANAGE USERS START=======================================
+  const columns = [
+    { field: "sn", headerName: "S.No", flex: 0, width: 60 },
+    { field: "userId", headerName: "User ID", flex: 0, minWidth: 160 },
+    { field: "firstName", headerName: "First Name", flex: 0, minWidth: 140 },
+    { field: "lastName", headerName: "Last Name", flex: 0, minWidth: 140 },
+    // { field: "role", headerName: "Role", flex: 1, minWidth: 120 },
+    { field: "companyName", headerName: "Company", flex: 1, minWidth: 160 },
+    {
+      field: "userCreateDate",
+      headerName: "Onboard Date",
+      flex: 1,
+      minWidth: 200,
+    },
+    // { field: "status", headerName: "Status", flex: 1, minWidth: 120 },
+    {
+      field: "status",
+      headerName: "Status",
+      flex: 1,
+      minWidth: 120,
+      renderCell: (params) => {
+        const isActive = params.value === 1;
+        const isLoading = loadingRowId === params.row.srno;
+
+        return (
+          <CustomTooltip placement="top" title="Click to update status" arrow>
+            <button
+              className="flex items-center justify-center gap-2 px-3 rounded-full cursor-pointer h-full"
+              onClick={() => {
+                handleUpdateUserStatus(params.row);
+              }}
+            >
+              {/* <span
+                className={`w-2.5 h-2.5 rounded-full ${isActive ? "bg-green-500" : "bg-red-500"
+                  }`}
+              ></span>
+              <span>{isActive ? "Active" : "Inactive"}</span> */}
+              <div
+                className={`text-white text-xs min-w-20 w-max px-2 py-1.5 border rounded-2xl text-center ${isActive ? "bg-green-500" : "bg-red-500"
+                  }`}
+              >
+                {/* {isActive ? "Active" : "Inactive"} */}
+                {isLoading ? (
+                  <>
+                    <LoopIcon
+                      className="text-[16px] animate-spin"
+                      sx={{ fontSize: "16px", marginRight: "2px" }}
+                    />
+                    {isActive ? "Deactivating..." : "Activating..."}
+                  </>
+                ) : isActive ? (
+                  "Active"
+                ) : (
+                  "Inactive"
+                )}
+              </div>
+            </button>
+          </CustomTooltip>
+        );
+      },
+    },
+    {
+      field: "action",
+      headerName: "Action",
+      flex: 1,
+      minWidth: 400,
+      renderCell: (params) => (
+        <>
+          <CustomTooltip
+            arrow
+            title={
+              userBalance
+                .find((balance) => balance.id == params.row.srno)
+                ?.balance?.toString() || "Click to fetch balance"
+            }
+            placement="top"
+          >
+            <IconButton onClick={() => handleFetchBalance(params.row.srno, params.row.userId)}>
+              <WalletIcon
+                sx={{
+                  fontSize: "1.2rem",
+                  color: "gray",
+                }}
+              />
+            </IconButton>
+          </CustomTooltip>
+          <CustomTooltip arrow title="OTP Validation Numbers" placement="top">
+            <IconButton onClick={() => handleOtp(params.row.srno)}>
+              <EmergencyOutlinedIcon
+                sx={{
+                  fontSize: "1.2rem",
+                  color: `${params.row.otpLogin == "0" ? "red" : "green"}`,
+                }}
+              />
+            </IconButton>
+          </CustomTooltip>
+          <CustomTooltip arrow title="View User Details" placement="top">
+            <IconButton onClick={() => handleView(params.row.srno)}>
+              <RemoveRedEyeOutlinedIcon
+                sx={{
+                  fontSize: "1.2rem",
+                  color: "gray",
+                }}
+              />
+            </IconButton>
+          </CustomTooltip>
+          <CustomTooltip arrow title="Edit User Details" placement="top">
+            <IconButton onClick={() => handleEdit(params.row.srno)}>
+              <EditNoteIcon
+                sx={{
+                  fontSize: "1.2rem",
+                  color: "gray",
+                }}
+              />
+            </IconButton>
+          </CustomTooltip>
+          <CustomTooltip arrow title="Assign Service" placement="top">
+            <IconButton onClick={() => handleService(params.row.srno)}>
+              <SettingsOutlinedIcon
+                sx={{
+                  fontSize: "1.2rem",
+                  color: "gray",
+                }}
+              />
+            </IconButton>
+          </CustomTooltip>
+          <CustomTooltip arrow title="Assign Rate" placement="top">
+            <IconButton onClick={() => handleAssign(params.row.srno)}>
+              <SettingsOutlinedIcon
+                sx={{
+                  fontSize: "1.2rem",
+                  color: "gray",
+                }}
+              />
+            </IconButton>
+          </CustomTooltip>
+          <CustomTooltip arrow title="Manage API Key" placement="top">
+            <IconButton onClick={() => handleApikey(params.row.srno)}>
+              <KeyOutlinedIcon
+                sx={{
+                  fontSize: "1.2rem",
+                  color: "gray",
+                }}
+              />
+            </IconButton>
+          </CustomTooltip>
+          <CustomTooltip arrow title="Reset Password" placement="top">
+            <IconButton onClick={() => handleReset(params.row.srno)}>
+              <LockOpenOutlinedIcon
+                sx={{
+                  fontSize: "1.2rem",
+                  color: "gray",
+                }}
+              />
+            </IconButton>
+          </CustomTooltip>
+          {/* <CustomTooltip arrow title="User Reports" placement="top">
+            <IconButton onClick={() => handleReport(params.row.srno)}>
+              <AssignmentOutlinedIcon
+                sx={{
+                  fontSize: "1.2rem",
+                  color: "gray",
+                }}
+              />
+            </IconButton>
+          </CustomTooltip> */}
+          <CustomTooltip arrow title="PE-TM Chain" placement="top">
+            <IconButton onClick={() => handlePetmChain(params.row.srno)}>
+              <HiLink className="size-[1.2rem] text-gray-500" />
+            </IconButton>
+          </CustomTooltip>
+        </>
+      ),
+    },
+  ];
+
+  const rows = Array.isArray(allUsers)
+    ? allUsers.map((item, i) => ({
+      id: i + 1,
+      sn: i + 1,
+      ...item,
+      role: item.role === "Reseller User" ? "User" : item.role,
+    }))
+    : [];
+
+  const totalPages = Math.ceil(rows.length / paginationModel.pageSize);
+
+  const CustomFooter = () => {
+    return (
+      <GridFooterContainer
+        sx={{
+          display: "flex",
+          flexWrap: "wrap",
+          // justifyContent: { xs: "center", lg: "space-between" },
+          alignItems: "center",
+          padding: 1,
+          // gap: 2,
+          overflowX: "auto",
+        }}
+      >
+        <Box
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            flexWrap: "wrap",
+            // gap: 1.5,
+          }}
+        >
+          {selectedRows.length > 0 && (
+            <Typography
+            // variant="body2"
+            // sx={{ borderRight: "1px solid #ccc", paddingRight: "10px" }}
+            >
+              {selectedRows.length} Rows Selected
+            </Typography>
+          )}
+
+          <Typography sx={{ fontSize: "15px" }}>
+            Total Records: <span className="font-semibold">{rows.length}</span>
+          </Typography>
+        </Box>
+
+        <Box
+          sx={{
+            display: "flex",
+            // justifyContent: "center",
+            // width: { xs: "100%", sm: "auto" },
+          }}
+        >
+          <CustomPagination
+            totalPages={totalPages}
+            paginationModel={paginationModel}
+            setPaginationModel={setPaginationModel}
+          />
+        </Box>
+      </GridFooterContainer>
+    );
+  };
+  //=======================================MANAGE USERS END=======================================
+
+  //=======================================USER PASSWORD RESET START=======================================
+  const [newPassword, setNewPassword] = useState("");
+  const [reset, setreset] = useState(false);
+  const [selectedIds, setSelectedIds] = useState([]);
+
+  const handleReset = (id, name) => {
+    setreset(true);
+    setSelectedIds(id);
+  };
+
+  async function handleResetPassword() {
+    if (!newPassword) return toast.error("Please enter new password");
+    const data = {
+      userSrno: selectedIds,
+      newpass: newPassword,
+    };
+
+    const params = `?userSrno=${selectedIds}`;
+
+    try {
+      const res = await updatePassword(data, params);
+
+      if (!res.msg?.includes("successfully")) {
+        return toast.error("Error in resetting password");
+      }
+      toast.success("Password reset successfully");
+      setreset(false);
+    } catch (e) {
+      return toast.error("Error in resetting password");
+    }
+  }
+  //=======================================USER PASSWORD RESET END=======================================
+
+  //=======================================PETM CHAIN START=======================================
+  // const [petmDialogVisible, setPETMDialogVisible] = useState(false);
+  // const [petmDetails, setPetmDetails] = useState({
+  //   selectedUserId: "",
+  //   petmChainType: 1,
+  //   tmd: "",
+  //   TMA1: "",
+  //   TMA2: "",
+  // });
+
+  // const handlePetmChain = (id) => {
+  //   setPETMDialogVisible(true);
+  //   setPetmDetails({
+  //     selectedUserId: id,
+  //     petmChainType: 1,
+  //     tmd: "",
+  //     TMA1: "",
+  //     TMA2: "",
+  //   });
+  //   setSelectedId(id);
+  // };
+
+  // useEffect(() => {
+  //   if (!selectedId) return;
+  //   async function fetchPETMChain() {
+  //     try {
+  //       const res = await getPETMChain(selectedId);
+
+  //       setPetmDetails({
+  //         selectedUserId: selectedId,
+  //         petmChainType: res?.petmChainType || 1,
+  //         tmd: res?.tmd || "",
+  //         TMA1: res?.TMA1 || "",
+  //         TMA2: res?.TMA2 || "",
+  //       });
+  //     } catch (e) {
+  //       return toast.error(e.message);
+  //     }
+  //   }
+  //   fetchPETMChain();
+  // }, [petmDialogVisible]);
+
+  // async function handlePETMSave() {
+  //   if (!petmDetails.petmChainType) {
+  //     return toast.error("Please select a chain type");
+  //   }
+  //   if (!petmDetails.tmd) {
+  //     return toast.error("Please select a TMD");
+  //   }
+
+  //   if (
+  //     (petmDetails.petmChainType === 2 || petmDetails.petmChainType === 3) &&
+  //     !petmDetails.TMA1
+  //   ) {
+  //     return toast.error("Please select a TMA1");
+  //   }
+
+  //   if (petmDetails.petmChainType === 3 && !petmDetails.TMA2) {
+  //     return toast.error("Please select a TMA2");
+  //   }
+
+  //   try {
+  //     const res = await savePETMChain(petmDetails);
+  //     if (!res?.msg?.includes("successfully")) {
+  //       return toast.error("Error in saving petm details");
+  //     }
+  //     toast.success("Petm details saved successfully");
+  //     setPETMDialogVisible(false);
+  //     setPetmDetails({
+  //       selectedUserId: "",
+  //       petmChainType: 1,
+  //       tmd: "",
+  //       TMA1: "",
+  //       TMA2: "",
+  //     });
+  //   } catch (e) {
+  //     return toast.error("Error in saving petm details");
+  //   }
+  // }
+
+  // const [selectedId, setSelectedId] = useState("");
+  const [petmDialogVisible, setPETMDialogVisible] = useState(false);
+  const [petmDetails, setPetmDetails] = useState({
+    selectedUserId: "",
+    petmChainType: 1,
+    tmd: "",
+    TMA1: "",
+    TMA2: "",
+  });
+
+  // Open dialog and prime defaults for a given user
+  const handlePetmChain = (id) => {
+    setPETMDialogVisible(true);
+    setPetmDetails({
+      selectedUserId: id,
+      petmChainType: 1,
+      tmd: "",
+      TMA1: "",
+      TMA2: "",
+    });
+    setSelectedId(id);
+  };
+
+  // Fetch existing PETM chain whenever dialog is opened for the selected user
+  useEffect(() => {
+    if (!selectedId || !petmDialogVisible) return;
+
+    async function fetchPETMChain() {
+      try {
+        const res = await getPETMChain(selectedId);
+        setPetmDetails((prev) => ({
+          ...prev,
+          selectedUserId: selectedId,
+          petmChainType: res?.petmChainType ?? 1,
+          tmd: res?.tmd ?? "",
+          TMA1: res?.TMA1 ?? "",
+          TMA2: res?.TMA2 ?? "",
+        }));
+      } catch (e) {
+        toast.error(e.message || "Failed to fetch PETM chain");
+      }
+    }
+
+    fetchPETMChain();
+  }, [petmDialogVisible, selectedId]);
+
+  // Build minimal payload based on selected chain type
+  const shownPayload = React.useMemo(() => {
+    const { selectedUserId, petmChainType, tmd, TMA1, TMA2 } = petmDetails;
+
+    if (petmChainType === 1) {
+      // Show blank strings for TMA1 & TMA2
+      return {
+        selectedUserId,
+        petmChainType,
+        tmd,
+        TMA1: "",
+        TMA2: "",
+      };
+    }
+
+    if (petmChainType === 2) {
+      // Always include TMA1 (value or ""), and blank TMA2
+      return {
+        selectedUserId,
+        petmChainType,
+        tmd,
+        TMA1: TMA1 ?? "",
+        TMA2: "",
+      };
+    }
+
+    // petmChainType === 3 → include both (value or "")
+    return {
+      selectedUserId,
+      petmChainType,
+      tmd,
+      TMA1: TMA1 ?? "",
+      TMA2: TMA2 ?? "",
+    };
+  }, [petmDetails]);
+
+  // Save handler with validation
+  async function handlePETMSave() {
+    if (!petmDetails.petmChainType) {
+      return toast.error("Please select a chain type");
+    }
+    if (!petmDetails.tmd) {
+      return toast.error("Please select a TMD");
+    }
+    if (
+      (petmDetails.petmChainType === 2 || petmDetails.petmChainType === 3) &&
+      !petmDetails.TMA1
+    ) {
+      return toast.error("Please select a TMA1");
+    }
+    if (petmDetails.petmChainType === 3 && !petmDetails.TMA2) {
+      return toast.error("Please select a TMA2");
+    }
+
+    try {
+      // save only minimal payload
+      const res = await savePETMChain(shownPayload);
+
+      if (!res?.msg?.includes("successfully")) {
+        return toast.error("Error in saving petm details");
+      }
+
+      toast.success("Petm details saved successfully");
+      setPETMDialogVisible(false);
+      setPetmDetails({
+        selectedUserId: "",
+        petmChainType: 1,
+        tmd: "",
+        TMA1: "",
+        TMA2: "",
+      });
+      setSelectedId("");
+    } catch (e) {
+      return toast.error("Error in saving petm details");
+    }
+  }
+
+  //=======================================PETM CHAIN END=======================================
+
+  const baseBadgeClass =
+    "mb-2 shadow w-max px-2 py-1 text-sm tracking-wider font-medium rounded-2xl";
+
+  const badgeClasses = {
+    enabled: `${baseBadgeClass} text-green-500 bg-green-100`,
+    disabled: `${baseBadgeClass} text-red-500 bg-red-100`,
+  };
+
+  return (
+    <>
+      {/* User Table Start */}
+      <Paper sx={{ height: 558 }} id={id} name={name}>
+        <DataGrid
+          id={id}
+          name={name}
+          rows={rows}
+          columns={columns}
+          initialState={{ pagination: { paginationModel } }}
+          pageSizeOptions={[10, 20, 50]}
+          pagination
+          paginationModel={paginationModel}
+          onPaginationModelChange={setPaginationModel}
+          rowHeight={45}
+          slots={{
+            footer: CustomFooter,
+            noRowsOverlay: CustomNoRowsOverlay,
+          }}
+          onRowSelectionModelChange={(ids) => setSelectedRows(ids)}
+          disableRowSelectionOnClick
+          disableColumnResize
+          disableColumnMenu
+          sx={{
+            border: 0,
+            "& .MuiDataGrid-cell": { outline: "none !important" },
+            "& .MuiDataGrid-columnHeaders": {
+              color: "#193cb8",
+              fontSize: "14px",
+              fontWeight: "bold !important",
+            },
+            "& .MuiDataGrid-row--borderBottom": {
+              backgroundColor: "#e6f4ff !important",
+            },
+            "& .MuiDataGrid-columnSeparator": { color: "#ccc" },
+          }}
+        />
+      </Paper>
+      {/* User Table End */}
+
+      {/* Dialog Section Start */}
+
+      {/* View user balance start */}
+      <Dialog
+        header="Balance"
+        visible={userBalanceDialogVisible.isOpen}
+        onHide={() =>
+          setUserBalanceDialogVisible({ isOpen: false, balance: 0 })
+        }
+        className="w-[25rem]"
+        draggable={false}
+      >
+        <div className="space-y-5">
+          <div className="text-sm text-gray-600">
+            User ID:
+            <span className="ml-1 font-medium text-gray-900">
+              {userBalanceDialogVisible?.userId || "Unknown"}
+            </span>
+          </div>
+
+          <div className="rounded-xl bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-100 p-5">
+            <p className="text-xs uppercase tracking-wide text-gray-500 mb-1">
+              Available Balance
+            </p>
+            <p className="text-3xl font-semibold text-gray-900">
+              ₹{Number(userBalanceDialogVisible?.balance || 0).toLocaleString()}
+            </p>
+          </div>
+
+          <p className="text-xs text-gray-400">
+            Balance reflects your current usable amount.
+          </p>
+        </div>
+      </Dialog>
+
+      {/* with rechargable credit */}
+
+      {/* <Dialog
+        header="Balance"
+        visible={userBalanceDialogVisible.isOpen}
+        onHide={() =>
+          setUserBalanceDialogVisible({ isOpen: false, balance: 0, rechargableCredit: 0 })
+        }
+        className="w-[25rem]"
+        draggable={false}
+      >
+        <div className="space-y-5">
+          <div className="text-sm text-gray-600">
+            User ID:
+            <span className="ml-1 font-medium text-gray-900">
+              {userBalanceDialogVisible?.userId || "Unknown"}
+            </span>
+          </div>
+
+          <div className="rounded-xl bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-100 p-5 space-y-2">
+            <div>
+              <p className="text-xs uppercase tracking-wide text-gray-500 mb-1">
+                Available Balance
+              </p>
+              <p className="text-3xl font-semibold text-gray-900">
+                ₹{Number(userBalanceDialogVisible?.balance || 0).toLocaleString()}
+              </p>
+            </div>
+
+            <div className="mt-4">
+              <p className="text-xs uppercase tracking-wide text-gray-500 mb-1">
+                Rechargeable Credit
+              </p>
+              <p
+                className={`text-2xl font-semibold ${Number(userBalanceDialogVisible?.rechargableCredit || 0) < 0
+                  ? "text-red-600"
+                  : "text-green-600"
+                  }`}
+              >
+                ₹{Number(userBalanceDialogVisible?.rechargableCredit || 0).toLocaleString()}
+              </p>
+            </div>
+          </div>
+
+          <p className="text-xs text-gray-400">
+            Balance reflects your current usable amount. Rechargeable credit shows additional credit
+            adjustments.
+          </p>
+        </div>
+      </Dialog> */}
+      {/* View user balance end */}
+
+      {/* Edit User details Start*/}
+      <Dialog
+        header="Edit details"
+        visible={editEditDetailsDialogVisible}
+        onHide={() => setEditDetailsDialogVisible(false)}
+        className="lg:w-[50rem] md:w-[40rem] w-[20rem]"
+        draggable={false}
+      >
+        <div className="space-y-3">
+          <div className="grid gap-4 mb-2 lg:grid-cols-2">
+            <InputField
+              label="User ID"
+              id="userid"
+              name="userid"
+              placeholder="Enter your User ID"
+              value={updateDetails.userId}
+              onChange={(e) =>
+                setUpdateDetails({ ...updateDetails, userId: e.target.value })
+              }
+              required
+            />
+            <UniversalDatePicker
+              label="Expiry Date"
+              id="expiryDate"
+              name="expiryDate"
+              placeholder="Enter Expiry Date"
+              value={updateDetails.expiryDate}
+              onChange={(newValue) =>
+                setUpdateDetails({ ...updateDetails, expiryDate: newValue })
+              }
+            />
+          </div>
+
+          {/* <div className="lg:w-100 md:w-100 flex flex-wrap gap-4 mt-5">
+            <div className="flex justify-center items-center">
+              <UniversalLabel
+                text="Status"
+                id="editstatus"
+                name="editstatus"
+                className="text-sm font-medium text-gray-700"
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <RadioButton
+                inputId="employeeidviewOption1"
+                name="employeeidviewredio"
+                value="enable"
+                onChange={() => {
+                  setUpdateDetails({
+                    ...updateDetails,
+                    status: 1,
+                  });
+                }}
+                checked={updateDetails.status == 1 ? true : false}
+              />
+              <label
+                htmlFor="employeeidviewOption1"
+                className="text-gray-700 font-medium text-sm cursor-pointer"
+              >
+                Active
+              </label>
+            </div>
+            <div className="flex items-center gap-2">
+              <RadioButton
+                inputId="employeeidviewOption2"
+                name="employeeidviewredio"
+                value="disable"
+                onChange={() => {
+                  setUpdateDetails({
+                    ...updateDetails,
+                    status: 0,
+                  });
+                }}
+                checked={updateDetails.status == 0 ? true : false}
+              />
+              <label
+                htmlFor="employeeidviewOption2"
+                className="text-gray-700 font-medium text-sm cursor-pointer"
+              >
+                Inactive
+              </label>
+            </div>
+          </div> */}
+
+          <div className="grid gap-4 lg:grid-cols-3 md:grid-cols-2">
+            <InputField
+              label="First Name"
+              id="firstname"
+              name="firstname"
+              placeholder="Enter your First Name"
+              value={updateDetails.firstName}
+              onChange={(e) =>
+                setUpdateDetails({
+                  ...updateDetails,
+                  firstName: e.target.value,
+                })
+              }
+              required
+            />
+            <InputField
+              label="Last Name"
+              id="lastname"
+              name="lastname"
+              placeholder="Enter your Last Name"
+              value={updateDetails.lastName}
+              onChange={(e) =>
+                setUpdateDetails({ ...updateDetails, lastName: e.target.value })
+              }
+              required
+            />
+            <InputField
+              label="Email ID"
+              type="email"
+              id="email"
+              name="email"
+              placeholder="Enter your Email ID"
+              value={updateDetails.emailId}
+              onChange={(e) =>
+                setUpdateDetails({ ...updateDetails, emailId: e.target.value })
+              }
+              required
+            />
+            <InputField
+              label="Mobile No."
+              id="mobile"
+              name="mobile"
+              placeholder="Enter your Mobile No."
+              type="number"
+              value={updateDetails.mobileNo}
+              onChange={(e) =>
+                setUpdateDetails({ ...updateDetails, mobileNo: e.target.value })
+              }
+            />
+            <InputField
+              label="Company Name"
+              id="company"
+              name="company"
+              placeholder="Enter your Company Name"
+              value={updateDetails.companyName}
+              onChange={(e) =>
+                setUpdateDetails({
+                  ...updateDetails,
+                  companyName: e.target.value,
+                })
+              }
+            />
+            <InputField
+              label="Address"
+              id="address"
+              name="address"
+              placeholder="Enter your Address"
+              value={updateDetails.address}
+              onChange={(e) =>
+                setUpdateDetails({ ...updateDetails, address: e.target.value })
+              }
+            />
+            <InputField
+              label="City"
+              id="city"
+              name="city"
+              placeholder="Enter your City"
+              value={updateDetails.city}
+              onChange={(e) =>
+                setUpdateDetails({ ...updateDetails, city: e.target.value })
+              }
+              disabled={true}
+            />
+            <InputField
+              label="State"
+              id="state"
+              name="state"
+              placeholder="Enter your State"
+              value={updateDetails.state}
+              onChange={(e) =>
+                setUpdateDetails({ ...updateDetails, state: e.target.value })
+              }
+              disabled={true}
+            />
+            <InputField
+              label="Country"
+              id="country"
+              name="country"
+              placeholder="Enter your Country"
+              value={updateDetails.country}
+              onChange={(e) =>
+                setUpdateDetails({ ...updateDetails, country: e.target.value })
+              }
+              disabled={true}
+            />
+            <InputField
+              label="Pincode"
+              id="Pincode"
+              name="Pincode"
+              placeholder="Enter your Pincode"
+              value={updateDetails.pinCode}
+              onChange={(e) => {
+                setUpdateDetails({ ...updateDetails, pinCode: e.target.value });
+                handleGetPincodeData(e.target.value);
+              }}
+            />
+            <InputField
+              label="Agent Limit"
+              id="agentlimit"
+              name="agentlimit"
+              placeholder="Enter agent Limit in number"
+              value={updateDetails.agentLimit}
+              onChange={(e) =>
+                setUpdateDetails({
+                  ...updateDetails,
+                  agentLimit: e.target.value,
+                })
+              }
+            />
+            {/* <div className="md:w-56 w-full">
+              <AnimatedDropdown
+                label="Account Manager"
+                id="accountManager"
+                name="accountManager"
+                options={accountManager}
+                value={updateDetails.accountManager}
+                onChange={(e) => {
+                  setUpdateDetails({
+                    ...updateDetails,
+                    accountManager: e,
+                  });
+                }}
+              />
+            </div> */}
+            {/* <AnimatedDropdown
+              label="User Type"
+              id="userType"
+              name="userType"
+              options={[
+                { value: "1", label: "Reseller" },
+                { value: "3", label: "User" },
+              ]}
+              value={updateDetails.userType}
+              onChange={(e) => {
+                setUpdateDetails({
+                  ...updateDetails,
+                  userType: e,
+                });
+              }}
+            /> */}
+          </div>
+          <div className="flex justify-center mt-3">
+            <UniversalButton
+              label="Save"
+              id="saveButton"
+              name="saveButton"
+              onClick={handleDetailsUpdate}
+            />
+          </div>
+        </div>
+      </Dialog>
+      {/* Edit User details End*/}
+
+      {/* Login details Start*/}
+      <Dialog
+        header="Login details"
+        visible={logins}
+        onHide={() => setLogins(false)}
+        className="w-[30rem]"
+        draggable={false}
+      >
+        Login details
+      </Dialog>
+      {/* Login details End*/}
+
+      {/* PETM Chain Start*/}
+      <Dialog
+        header="Configure PE-TM Chain"
+        visible={petmDialogVisible}
+        onHide={() => setPETMDialogVisible(false)}
+        className="w-[30rem]"
+        draggable={false}
+      >
+        <div className="space-y-4">
+          <AnimatedDropdown
+            id="petmChain"
+            name="petmChain"
+            label="Select PETM Chain"
+            options={[
+              { label: "Entity - TMD", value: 1 },
+              { label: "Entity - TMA1 - TMD", value: 2 },
+              { label: "Entity - TMA1 - TMA2 - TMD", value: 3 },
+            ]}
+            value={petmDetails.petmChainType}
+            onChange={(val) => {
+              setPetmDetails((prev) => {
+                if (val === 1) {
+                  // keep TMD, explicitly blank TMA1 & TMA2
+                  return { ...prev, petmChainType: 1, TMA1: "", TMA2: "" };
+                }
+                if (val === 2) {
+                  // keep TMD/TMA1, explicitly blank TMA2
+                  return { ...prev, petmChainType: 2, TMA2: "" };
+                }
+                // val === 3 → keep all current values
+                return { ...prev, petmChainType: 3 };
+              });
+            }}
+            placeholder="Select PE-TM Chain"
+          />
+
+          <InputField
+            label="TMD"
+            id="tmd"
+            name="tmd"
+            placeholder="Enter TMD"
+            type="number"
+            value={petmDetails.tmd}
+            onChange={(e) =>
+              setPetmDetails((prev) => ({ ...prev, tmd: e.target.value }))
+            }
+          />
+
+          {(petmDetails.petmChainType === 2 ||
+            petmDetails.petmChainType === 3) && (
+              <InputField
+                label="TMA-1"
+                id="tma1"
+                name="tma1"
+                placeholder="Enter TMA-1"
+                type="number"
+                value={petmDetails.TMA1}
+                onChange={(e) =>
+                  setPetmDetails((prev) => ({ ...prev, TMA1: e.target.value }))
+                }
+              />
+            )}
+
+          {petmDetails.petmChainType === 3 && (
+            <InputField
+              label="TMA-2"
+              id="tma2"
+              name="tma2"
+              placeholder="Enter TMA-2"
+              type="number"
+              value={petmDetails.TMA2}
+              onChange={(e) =>
+                setPetmDetails((prev) => ({ ...prev, TMA2: e.target.value }))
+              }
+            />
+          )}
+
+          {/* Payload Preview */}
+          {/* <div className="space-y-2">
+            <label className="text-sm font-medium text-gray-700">
+              Payload Preview
+            </label>
+            <pre className="rounded-md bg-gray-100 p-3 text-sm overflow-auto">
+              {JSON.stringify(shownPayload, null, 2)}
+            </pre>
+          </div> */}
+
+          <UniversalButton
+            id={"saveButton"}
+            name={"saveButton"}
+            label="Save"
+            onClick={handlePETMSave}
+            className="w-full"
+          />
+        </div>
+      </Dialog>
+      {/* PETM Chain End*/}
+
+      {/*2FA OTP Enable Start*/}
+      <Dialog
+        header="OTP details"
+        visible={otpService}
+        onHide={() => setOtpService(false)}
+        className="w-[40rem]"
+        draggable={false}
+      >
+        <div className="w-full p-2 mx-auto rounded-lg border ">
+          <h2 className="mb-4 text-lg font-semibold text-center text-gray-800">
+            Mobile Numbers
+          </h2>
+
+          <div className="flex flex-col flex-wrap gap-3">
+            {mobileNumbers.map((item, index) => {
+              return (
+                <div key={index} className="relative flex items-center gap-3">
+                  <DropdownWithSearch
+                    id={`selectCountryCode-${index}`}
+                    name="selectCountryCode"
+                    options={formattedCountryOptions}
+                    value={item?.code}
+                    onChange={(value) => handleCountryCodeChange(index, value)}
+                  />
+
+                  <InputField
+                    variant="outlined"
+                    placeholder="Enter mobile number..."
+                    value={item?.number}
+                    onChange={(e) => handleInputChange(index, e.target.value)}
+                    className="w-full"
+                    size="small"
+                    maxLength="10"
+                  />
+
+                  <MdOutlineDeleteForever
+                    onClick={() => removeMobileNumber(index)}
+                    className="absolute text-red-500 cursor-pointer hover:text-red-600 right-12"
+                    size={20}
+                  />
+
+                  <div className="flex items-center">
+                    <IoAddSharp
+                      onClick={addMobileNumber}
+                      className="text-green-600 cursor-pointer hover:text-green-700"
+                      size={20}
+                    />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          <div className="flex justify-center gap-2 mt-4">
+            {/* {!saveOtpService && (
+              <UniversalButton
+                label="Add"
+                id="addButton"
+                name="addButton"
+                variant="contained"
+                color="primary"
+                onClick={addMobileNumber}
+              />
+            )} */}
+            <UniversalButton
+              // label="Save"
+              label={saveOtpService ? "Saveing" : "Save"}
+              disabled={saveOtpService}
+              id="saveButton"
+              name="saveButton"
+              variant="contained"
+              color="primary"
+              onClick={saveMobileNumber}
+            />
+
+            {/* <IconButton
+                onClick={addMobileNumber}
+                sx={{
+                  bgcolor: "#1E40AF",
+                  color: "white",
+                  borderRadius: "50%",
+                  width: 50,
+                  height: 50,
+                  boxShadow: "0px 4px 8px rgba(0, 0, 0, 0.2)",
+                  "&:hover": { bgcolor: "#2563EB" },
+                }}
+              >
+                <AddCircleIcon sx={{ fontSize: 36 }} />
+              </IconButton> */}
+          </div>
+        </div>
+      </Dialog>
+      {/*2FA OTP Enable End*/}
+
+      {/* View User details Start */}
+      <Dialog
+        header="View details"
+        visible={viewService}
+        onHide={() => setViewService(false)}
+        className="w-[48rem] max-w-full"
+        draggable={false}
+      >
+        {selectedUserDetails ? (
+          <div className="space-y-6 p-3 border rounded-xl shadow-md">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+              <div className="flex items-center gap-2 text-sm">
+                <RemoveRedEyeOutlinedIcon className="text-gray-600" />
+                <p>
+                  <strong className="text-sm">User ID : </strong>
+                  {selectedUserDetails.userId || "Not Available"}
+                </p>
+              </div>
+              <div className="flex items-center gap-2 text-sm">
+                <CalendarTodayOutlinedIcon className="text-gray-600" />
+                <p>
+                  <strong>Onboard Date : </strong>
+                  {selectedUserDetails.userCreateDate || "Not Available"}
+                </p>
+              </div>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+              <div className="flex items-center gap-2 text-sm">
+                <CalendarTodayOutlinedIcon className="text-gray-600" />
+                <p>
+                  <strong className="text-sm">Expiry Date : </strong>
+                  {selectedUserDetails.expiryDate || "Not Available"}
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                <PersonOutlineOutlinedIcon className="text-gray-600" />
+                <p>
+                  <strong>First Name : </strong>
+                  {selectedUserDetails.firstName || "Not Available"}
+                </p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 text-sm">
+              <div className="flex items-center gap-2">
+                <PersonOutlineOutlinedIcon className="text-gray-600" />
+                <p>
+                  <strong>Last Name : </strong>{" "}
+                  {selectedUserDetails.lastName || "Not Available"}
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <EmailOutlinedIcon className="text-gray-600" />
+                <p>
+                  <strong>Email ID : </strong>{" "}
+                  {selectedUserDetails.emailId || "Not Available"}
+                </p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 text-sm">
+              <div className="flex items-center gap-2">
+                <PhoneOutlinedIcon className="text-gray-600" />
+                <p>
+                  <strong>Mobile No. : </strong>{" "}
+                  {selectedUserDetails.mobileNo || "Not Available"}
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <BusinessOutlinedIcon className="text-gray-600" />
+                <p>
+                  <strong>Company Name : </strong>{" "}
+                  {selectedUserDetails.companyName || "Not Available"}
+                </p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 text-sm">
+              <div className="flex items-center gap-2">
+                <LocationOnOutlinedIcon className="text-gray-600" />
+                <p>
+                  <strong>Address : </strong>{" "}
+                  {selectedUserDetails.address || "Not Available"}
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                <LocationCityOutlinedIcon className="text-gray-600" />
+                <p>
+                  <strong>City : </strong>{" "}
+                  {selectedUserDetails.city || "Not Available"}
+                </p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 text-sm">
+              <div className="flex items-center gap-2">
+                <MapOutlinedIcon className="text-gray-600" />
+                <p>
+                  <strong>State : </strong>{" "}
+                  {selectedUserDetails.state || "Not Available"}
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                <PublicOutlinedIcon className="text-gray-600" />
+                <p>
+                  <strong>Country : </strong>{" "}
+                  {selectedUserDetails.country || "Not Available"}
+                </p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 text-sm">
+              <div className="flex items-center gap-2">
+                <PinDropOutlinedIcon className="text-gray-600" />
+                <p>
+                  <strong>Pincode : </strong>{" "}
+                  {selectedUserDetails.pinCode || "Not Available"}
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <CheckCircleOutlineOutlinedIcon className="text-gray-600" />
+                <p>
+                  <strong>Status : </strong>{" "}
+                  {selectedUserDetails.status === 1
+                    ? "Active"
+                    : selectedUserDetails.status === 0
+                      ? "Inactive"
+                      : "Not Available"}
+                </p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 text-sm">
+              <div className="flex items-center gap-2">
+                <KeyOutlinedIcon className="text-gray-600" />
+                <p>
+                  <strong>Domain : </strong>{" "}
+                  {selectedUserDetails.domain || "Not Available"}
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                <SupportAgentOutlinedIcon className="text-gray-600" />
+                <p>
+                  <strong>Agent Limit : </strong>{" "}
+                  {selectedUserDetails.agentLimit || "Not Available"}
+                </p>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <p className="text-center text-gray-500">Loading user details...</p>
+        )}
+      </Dialog>
+      {/* View User details End */}
+
+      {/* assignRate Start */}
+      <Dialog
+        header="Assign Rate"
+        visible={assignRate}
+        onHide={() => {
+          setassignRate(false);
+          setCharges(0);
+        }}
+        className="lg:w-[69rem] md:w-[55rem] w-full"
+        draggable={false}
+      >
+        <Box sx={{ width: "100%" }}>
+          <Tabs
+            value={value}
+            onChange={handleChange}
+            aria-label="Assign Rate Tabs"
+            textColor="primary"
+            indicatorColor="primary"
+            allowScrollButtonsMobile
+            variant="scrollable"
+          >
+            <Tab
+              label={
+                <span>
+                  <WhatsAppIcon size={20} /> WhatsApp
+                </span>
+              }
+              {...a11yProps(0)}
+              sx={{
+                textTransform: "none",
+                fontWeight: "bold",
+                color: "text.secondary",
+                "&:hover": {
+                  color: "primary.main",
+                  backgroundColor: "#f0f4ff",
+                  borderRadius: "8px",
+                },
+              }}
+            />
+            <Tab
+              label={
+                <span className="flex items-center gap-2">
+                  <BsJournalArrowDown size={18} />
+                  RCS
+                </span>
+              }
+              {...a11yProps(1)}
+              sx={{
+                textTransform: "none",
+                fontWeight: "bold",
+                color: "text.secondary",
+                "&:hover": {
+                  color: "primary.main",
+                  backgroundColor: "#f0f4ff",
+                  borderRadius: "8px",
+                },
+              }}
+            />
+            <Tab
+              label={
+                <span>
+                  <SmsOutlinedIcon size={20} /> SMS
+                </span>
+              }
+              {...a11yProps(2)}
+              sx={{
+                textTransform: "none",
+                fontWeight: "bold",
+                color: "text.secondary",
+                "&:hover": {
+                  color: "primary.main",
+                  backgroundColor: "#f0f4ff",
+                  borderRadius: "8px",
+                },
+              }}
+            />
+            <Tab
+              label={
+                <span>
+                  <CampaignOutlinedIcon size={20} />
+                  OBD
+                </span>
+              }
+              {...a11yProps(3)}
+              sx={{
+                textTransform: "none",
+                fontWeight: "bold",
+                color: "text.secondary",
+                "&:hover": {
+                  color: "primary.main",
+                  backgroundColor: "#f0f4ff",
+                  borderRadius: "8px",
+                },
+              }}
+            />
+            <Tab
+              label={
+                <span>
+                  <CampaignOutlinedIcon size={20} />
+                  Number Lookup
+                </span>
+              }
+              {...a11yProps(4)}
+              sx={{
+                textTransform: "none",
+                fontWeight: "bold",
+                color: "text.secondary",
+                "&:hover": {
+                  color: "primary.main",
+                  backgroundColor: "#f0f4ff",
+                  borderRadius: "8px",
+                },
+              }}
+              disabled
+            />
+            <Tab
+              label={
+                <span>
+                  <CampaignOutlinedIcon size={20} />
+                  Two Way
+                </span>
+              }
+              {...a11yProps(4)}
+              sx={{
+                textTransform: "none",
+                fontWeight: "bold",
+                color: "text.secondary",
+                "&:hover": {
+                  color: "primary.main",
+                  backgroundColor: "#f0f4ff",
+                  borderRadius: "8px",
+                },
+              }}
+              disabled
+            />
+            <Tab
+              label={
+                <span>
+                  <PhoneMissedOutlinedIcon size={20} />
+                  Missed Call
+                </span>
+              }
+              {...a11yProps(5)}
+              sx={{
+                textTransform: "none",
+                fontWeight: "bold",
+                color: "text.secondary",
+                "&:hover": {
+                  color: "primary.main",
+                  backgroundColor: "#f0f4ff",
+                  borderRadius: "8px",
+                },
+              }}
+              disabled
+            />
+            <Tab
+              label={
+                <span>
+                  <CampaignOutlinedIcon size={20} />
+                  C2C
+                </span>
+              }
+              {...a11yProps(6)}
+              sx={{
+                textTransform: "none",
+                fontWeight: "bold",
+                color: "text.secondary",
+                "&:hover": {
+                  color: "primary.main",
+                  backgroundColor: "#f0f4ff",
+                  borderRadius: "8px",
+                },
+              }}
+              disabled
+            />
+            <Tab
+              label={
+                <span>
+                  <EmailOutlinedIcon size={20} />
+                  E-mail
+                </span>
+              }
+              {...a11yProps(7)}
+              sx={{
+                textTransform: "none",
+                fontWeight: "bold",
+                color: "text.secondary",
+                "&:hover": {
+                  color: "primary.main",
+                  backgroundColor: "#f0f4ff",
+                  borderRadius: "8px",
+                },
+              }}
+              disabled
+            />
+            <Tab
+              label={
+                <span>
+                  <CampaignOutlinedIcon size={20} />
+                  IBD
+                </span>
+              }
+              {...a11yProps(8)}
+              sx={{
+                textTransform: "none",
+                fontWeight: "bold",
+                color: "text.secondary",
+                "&:hover": {
+                  color: "primary.main",
+                  backgroundColor: "#f0f4ff",
+                  borderRadius: "8px",
+                },
+              }}
+              disabled
+            />
+          </Tabs>
+
+          {/* whatsapp */}
+          <CustomTabPanel value={value} index={0} className="">
+            <div>
+              <>
+                {enableServices.find((s) => s.name == "WHATSAPP")?.enable ? (
+                  <div className={badgeClasses.enabled}>Enabled</div>
+                ) : (
+                  <div className={badgeClasses.disabled}>Disabled</div>
+                )}
+                <div className="">
+                  <div className="flex items-center justify-start mb-2 gap-2">
+                    <p className="text-sm font-medium text-gray-700">Whatsapp Monthly Rent</p>
+                    <p className="text-xs font-medium border p-0.5 rounded-md text-gray-500 bg-gray-100">
+                      The value must be greater than 1 INR. Setting 0 or disabling is not allowed.
+                    </p>
+                  </div>
+                  <div className="mb-2 flex gap-2 items-end justify-start">
+                    <InputField
+                      id="charges"
+                      name="charges"
+                      // label="Whatsapp Monthly Rent"
+                      placeholder="INR"
+                      value={charges}
+                      onChange={(e) => {
+                        setCharges(e.target.value);
+                      }}
+                      type="text"
+                    />
+                    <UniversalButton
+                      id="chargesSave"
+                      name="chargesSave"
+                      label="Save"
+                      onClick={handleChargesSave}
+                    />
+                  </div>
+                </div>
+                <div id="whatsapptable">
+                  <div className="flex flex-wrap items-end justify-start w-full gap-4 pb-5 align-middle lg:flex-nowrap">
+                    <DropdownWithSearch
+                      id="whatsappcountryselect"
+                      name="whatsappcountryselect"
+                      label="Select Country"
+                      options={countryOptions}
+                      value={whatsappCountry}
+                      onChange={(value) => setWhatsappCountry(value)}
+                    />
+
+                    <InputField
+                      id="whatsapputility"
+                      name="whatsapputility"
+                      label="Utility"
+                      placeholder="INR / Credit"
+                      value={whatsappUtility}
+                      onChange={(e) =>
+                        validateInput(e.target.value, setWhatsappUtility)
+                      }
+                      type="text"
+                      readOnly={!whatsappCountry}
+                    />
+
+                    <InputField
+                      id="whatsappauthentication"
+                      name="whatsappauthentication"
+                      label="Authentication"
+                      placeholder="INR / Credit"
+                      value={whatsappAuthentication}
+                      onChange={(e) =>
+                        validateInput(e.target.value, setWhatsappAuthentication)
+                      }
+                      type="text"
+                      readOnly={!whatsappCountry}
+                    />
+
+                    <InputField
+                      id="whatsappmarketing"
+                      name="whatsappmarketing"
+                      label="Marketing"
+                      placeholder="INR / Credit"
+                      value={whatsappMarketing}
+                      onChange={(e) =>
+                        validateInput(e.target.value, setWhatsappMarketing)
+                      }
+                      type="text"
+                      readOnly={!whatsappCountry}
+                    />
+
+                    <UniversalButton
+                      label="Add"
+                      id="whatsaapaddcredit"
+                      name="whatsaapaddcredit"
+                      onClick={handleWhatsappAddCredit}
+                    />
+                  </div>
+
+                  <DataTable
+                    height={288}
+                    id="whatsapp-rate-table"
+                    name="whatsappRateTable"
+                    col={whatsaappcolumns}
+                    rows={whatsapprows}
+                    selectedRows={selectedRows}
+                    setSelectedRows={setSelectedRows}
+                    getRowHeight={null}
+                  />
+                </div>
+              </>
+
+              {/* Edit whatsapp Rate */}
+              <Dialog
+                header="Edit WhatsApp Rate"
+                visible={editWhatsappVisible}
+                onHide={() => setEditWhatsappVisible(false)}
+                style={{ width: "50rem" }}
+                draggable={false}
+              >
+                <div className="space-y-4">
+                  {/* <DropdownWithSearch
+                    id="editCountry"
+                    name="editCountry"
+                    label="Country"
+                    value={editWhatsappForm.countryCode}
+                    options={countryOptions}
+                    onChange={(val) =>
+                      setEditWhatsappForm((prev) => ({
+                        ...prev,
+                        countryCode: val,
+                      }))
+                    }
+                  /> */}
+                  <div className="flex items-center gap-5 flex-wrap md:flex-nowrap w-full">
+                    <InputField
+                      label="Utility"
+                      value={editWhatsappForm.utility}
+                      onChange={(e) =>
+                        validateInput(e.target.value, (val) =>
+                          setEditWhatsappForm((prev) => ({
+                            ...prev,
+                            utility: val,
+                          }))
+                        )
+                      }
+                    />
+
+                    <InputField
+                      label="Authentication"
+                      value={editWhatsappForm.authentication}
+                      onChange={(e) =>
+                        validateInput(e.target.value, (val) =>
+                          setEditWhatsappForm((prev) => ({
+                            ...prev,
+                            authentication: val,
+                          }))
+                        )
+                      }
+                    />
+                    <InputField
+                      label="Marketing"
+                      value={editWhatsappForm.marketing}
+                      onChange={(e) =>
+                        validateInput(e.target.value, (val) =>
+                          setEditWhatsappForm((prev) => ({
+                            ...prev,
+                            marketing: val,
+                          }))
+                        )
+                      }
+                    />
+                  </div>
+
+                  <div className="flex justify-center">
+                    <UniversalButton
+                      label="Update"
+                      onClick={handleWhatsappUpdate}
+                    />
+                  </div>
+                </div>
+              </Dialog>
+
+              {/* Delete whatsapp Rate  */}
+              <Dialog
+                header="Delete WhatsApp Rate"
+                visible={whatsappDeleteVisible}
+                style={{ width: "27rem" }}
+                onHide={() => setWhatsappDeleteVisible(false)}
+                draggable={false}
+              >
+                <div className="flex items-center justify-center">
+                  <CancelOutlinedIcon sx={{ fontSize: 64, color: "#ff3f3f" }} />
+                </div>
+                <div className="p-4 text-center">
+                  <p className="text-[1.1rem] font-semibold text-gray-700">
+                    Delete rate for{" "}
+                    <span className="text-green-600">
+                      {editingRow?.countryName}
+                    </span>
+                    ?
+                  </p>
+                  <p className="text-sm text-gray-500 mt-1">
+                    This action cannot be undone.
+                  </p>
+                </div>
+                <div className="flex justify-center gap-4 mt-4">
+                  <UniversalButton
+                    label="Cancel"
+                    onClick={() => setWhatsappDeleteVisible(false)}
+                  />
+                  <UniversalButton
+                    label="Delete"
+                    onClick={async () => {
+                      const res = await deleteWhatsappRateBySrno(
+                        editingRow.srno,
+                        currentUserSrno
+                      );
+                      if (res?.message?.toLowerCase().includes("success")) {
+                        toast.success("Rate deleted.");
+                        fetchWhatsappRateData(currentUserSrno);
+                        setWhatsappDeleteVisible(false);
+                      } else {
+                        toast.error(res.message || "Delete failed.");
+                      }
+                    }}
+                  />
+                </div>
+              </Dialog>
+            </div>
+          </CustomTabPanel>
+
+          {/* RCS */}
+          <CustomTabPanel value={value} index={1}>
+            <>
+              {enableServices.find((s) => s.name == "RCS")?.enable ? (
+                <p className={badgeClasses.enabled}>Enabled</p>
+              ) : (
+                <p className={badgeClasses.disabled}>Disabled</p>
+              )}
+              <div id="rcstable">
+                <div className="flex flex-wrap items-end justify-start w-full gap-4 pb-5 align-middle lg:flex-nowrap">
+                  <DropdownWithSearch
+                    id="rcscountryselect"
+                    name="rcscountryselect"
+                    label="Select Country"
+                    options={countryOptions}
+                    value={rcsCountry}
+                    onChange={(value) => setRcsCountry(value)}
+                  />
+
+                  <InputField
+                    id="rcsrate"
+                    name="rcsrate"
+                    label="Rate"
+                    placeholder="INR / Credit"
+                    value={rcsrate}
+                    onChange={(e) => validateInput(e.target.value, setRcsrate)}
+                    type="text"
+                    readOnly={!rcsCountry}
+                  />
+
+                  <UniversalButton
+                    label="Add"
+                    id="rcsaddcredit"
+                    name="rcsaddcredit"
+                    onClick={handleRcsAddCredit}
+                    disabled={!rcsrate || !rcsCountry}
+                  />
+                </div>
+
+                <Paper sx={{ height: 250 }} id={id} name={name}>
+                  <DataGrid
+                    id={id}
+                    name={name}
+                    rows={rcsrows}
+                    columns={rcscolumns}
+                    initialState={{ pagination: { paginationModel } }}
+                    pageSizeOptions={[10, 20, 50]}
+                    pagination
+                    paginationModel={paginationModel}
+                    onPaginationModelChange={setPaginationModel}
+                    rowHeight={45}
+                    slots={{
+                      footer: RcsCustomFooter,
+                      noRowsOverlay: CustomNoRowsOverlay,
+                    }}
+                    onRowSelectionModelChange={(ids) => setSelectedRows(ids)}
+                    disableRowSelectionOnClick
+                    // disableColumnResize
+                    disableColumnMenu
+                    sx={{
+                      border: 0,
+                      "& .MuiDataGrid-cell": { outline: "none !important" },
+                      "& .MuiDataGrid-columnHeaders": {
+                        color: "#193cb8",
+                        fontSize: "14px",
+                        fontWeight: "bold !important",
+                      },
+                      "& .MuiDataGrid-row--borderBottom": {
+                        backgroundColor: "#e6f4ff !important",
+                      },
+                      "& .MuiDataGrid-columnSeparator": { color: "#ccc" },
+                    }}
+                  />
+                </Paper>
+              </div>
+
+              {/* Edit Rcs Rate Dialog */}
+              <Dialog
+                header="Edit Rcs Rate"
+                visible={editRcsVisible}
+                onHide={() => setEditRcsVisible(false)}
+                style={{ width: "30rem" }}
+                draggable={false}
+              >
+                <div className="space-y-4">
+                  <div className="flex items-center gap-5">
+                    <InputField
+                      label="Update Rate"
+                      placeholder="Update Rcs Rate"
+                      value={rcsUpdateRate}
+                      onChange={(e) =>
+                        validateInput(e.target.value, setRcsUpdateRate)
+                      }
+                    />
+                  </div>
+                  <div className="flex justify-center">
+                    <UniversalButton label="Update" onClick={handleRcsUpdate} />
+                  </div>
+                </div>
+              </Dialog>
+
+              {/* Delete Rcs Rate  dialog*/}
+              <Dialog
+                header="Delete Rcs Rate"
+                visible={rcsDeleteVisible}
+                style={{ width: "27rem" }}
+                onHide={() => setRcsDeleteVisible(false)}
+                draggable={false}
+              >
+                <div className="flex items-center justify-center">
+                  <CancelOutlinedIcon sx={{ fontSize: 64, color: "#ff3f3f" }} />
+                </div>
+                <div className="p-4 text-center">
+                  <p className="text-[1.1rem] font-semibold text-gray-700">
+                    Delete rate for{" "}
+                    <span className="text-green-600">
+                      {deletingRcsRow?.countryName}
+                    </span>
+                    ?
+                  </p>
+                  <p className="text-sm text-gray-500 mt-1">
+                    This action cannot be undone.
+                  </p>
+                </div>
+                <div className="flex justify-center gap-4 mt-4">
+                  {!rcsIsFetching && (
+                    <UniversalButton
+                      label="Cancel"
+                      onClick={() => setRcsDeleteVisible(false)}
+                    />
+                  )}
+                  <UniversalButton
+                    label={rcsIsFetching ? "Deleting..." : "Delete"}
+                    onClick={handleRcsDelete}
+                    disabled={rcsIsFetching}
+                  />
+                </div>
+              </Dialog>
+            </>
+          </CustomTabPanel>
+
+          {/* SMS */}
+          <CustomTabPanel value={value} index={2}>
+            <>
+              {enableServices.find((s) => s.name == "SMS")?.enable ? (
+                <div className={badgeClasses.enabled}>Enabled</div>
+              ) : (
+                <p className={badgeClasses.disabled}>Disabled</p>
+              )}
+              {/* <div className="space-y-2">
+                <p>Transaction Service</p>
+                <div className="flex mb-2 lg:w-100 md:w-100">
+                  <Checkbox
+                    id="smsstatus"
+                    name="smsstatus"
+                    onChange={(e) => setTranscheck(e.checked)}
+                    checked={transcheck}
+                    className="m-2"
+                  />
+
+                  <AnimatedDropdown
+                    id="transdropdown"
+                    name="transdropdown"
+                    options={transOptions}
+                    value={trans} // <- should be the selected serviceId
+                    onChange={(selected) => setTrans(selected)} // selected.value if needed
+                    disabled={!transcheck}
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <p>Promotion Service</p>
+                <div className="flex lg:w-100 md:w-100">
+                  <Checkbox
+                    id="smspromo"
+                    name="smspromo"
+                    onChange={(e) => setPromocheck(e.checked)}
+                    checked={promocheck}
+                    className="m-2"
+                  />
+
+                  <AnimatedDropdown
+                    id="promodropdown"
+                    name="promodropdown"
+                    options={promoOption}
+                    value={promo}
+                    onChange={(selected) => setPromo(selected)}
+                    disabled={!promocheck}
+                  />
+                </div>
+              </div> */}
+              <div className="space-y">
+                <div className="grid md:grid-cols-2 grid-cols-1 gap-5">
+                  <div className="w-full">
+                    <DropdownWithSearch
+                      id="transService"
+                      name="transService"
+                      options={transOptions}
+                      value={trans}
+                      label="Transactional Service"
+                      onChange={(e) => {
+                        setTrans(e);
+                      }}
+                    />
+                  </div>
+
+                  <div className="w-full">
+                    <DropdownWithSearch
+                      id="promoService"
+                      name="promoService"
+                      options={promoOption}
+                      value={promo}
+                      label="Promotional Service"
+                      onChange={(e) => {
+                        setPromo(e);
+                      }}
+                    />
+                  </div>
+                </div>
+
+                <div className="grid md:grid-cols-3 grid-cols-1 items-end gap-5 mt-2">
+                  <div className="w-full">
+                    <DropdownWithSearch
+                      id="smsCountry"
+                      name="smsCountry"
+                      label="Select Country"
+                      options={countryOptions}
+                      value={99}
+                      onChange={(value) => { }}
+                      disabled={true}
+                    />
+                  </div>
+                  <div className="w-full">
+                    <InputField
+                      id="translimit"
+                      name="translimit"
+                      label="Rate"
+                      placeholder="(INR / Credit)"
+                      value={smsrate}
+                      onChange={(e) =>
+                        validateInput(e.target.value, setSmsRate)
+                      }
+                      type="number"
+                    />
+                  </div>
+                  <div className="w-full flex items-end gap-2">
+                    <InputField
+                      id="dltRate"
+                      name="dltRate"
+                      label="Dlt Rate"
+                      placeholder="(INR / Credit)"
+                      value={dltRate}
+                      onChange={(e) =>
+                        validateInput(e.target.value, setDltRate)
+                      }
+                      type="number"
+                    />
+                    <UniversalButton
+                      label="Save"
+                      id="smsSave"
+                      name="smsSave"
+                      onClick={handleSaveSmsPricing}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-2">
+                <DataTable
+                  height={288}
+                  id="sms-rate-table"
+                  name="smsRateTable"
+                  col={smsCol}
+                  rows={smsRows}
+                  getRowHeight={null}
+                />
+              </div>
+
+              <Dialog
+                header="Delete SMS Rate"
+                visible={smsDeleteVisible}
+                style={{ width: "27rem" }}
+                onHide={() => setSMSDeleteVisible(false)}
+                draggable={false}
+              >
+                <div className="flex items-center justify-center">
+                  <CancelOutlinedIcon sx={{ fontSize: 64, color: "#ff3f3f" }} />
+                </div>
+                <div className="p-4 text-center">
+                  <p className="text-[1.1rem] font-semibold text-gray-700">
+                    Remove Pricing?
+                  </p>
+                  <p className="text-sm text-gray-500 mt-1">
+                    This action cannot be undone.
+                  </p>
+                </div>
+                <div className="flex justify-center gap-4 mt-4">
+                  <UniversalButton
+                    label="Cancel"
+                    onClick={() => setSMSDeleteVisible(false)}
+                  />
+                  <UniversalButton
+                    label="Delete"
+                    onClick={handleRemoveSMSPricing}
+                  />
+                </div>
+              </Dialog>
+            </>
+          </CustomTabPanel>
+
+          {/* OBD */}
+          <CustomTabPanel value={value} index={3}>
+            <>
+              {enableServices.find((s) => s.name == "OBD")?.enable ? (
+                <p className={badgeClasses.enabled}>Enabled</p>
+              ) : (
+                <p className={badgeClasses.disabled}>Disabled</p>
+              )}
+              <div className=" lg:w-100 md:w-100">
+                <div className="flex flex-wrap gap-4 my-2 lg:w-100 md:w-100 ">
+                  {/* Option 1 */}
+                  <div className="flex items-center gap-2">
+                    <RadioButton
+                      inputId="obdrateOption1"
+                      name="obdrateredio"
+                      value="enable"
+                      onChange={handleChangeobdRate}
+                      checked={obdrateStatus === "enable"}
+                    />
+                    <label
+                      htmlFor="obdrateOption1"
+                      className="text-sm font-medium text-gray-700 cursor-pointer"
+                    >
+                      @ 15 sec
+                    </label>
+                  </div>
+                  {/* Option 2 */}
+                  <div className="flex items-center gap-2">
+                    <RadioButton
+                      inputId="obdrateOption2"
+                      name="obdrateredio"
+                      value="disable"
+                      onChange={handleChangeobdRate}
+                      checked={obdrateStatus === "disable"}
+                    />
+                    <label
+                      htmlFor="obdrateOption2"
+                      className="text-sm font-medium text-gray-700 cursor-pointer"
+                    >
+                      @ 30 sec
+                    </label>
+                  </div>
+                </div>
+                <div className="flex  gap-5 items-center justify-center mt-3">
+                  <InputField
+                    id="transratesobd"
+                    name="transratesobd"
+                    label="Rate"
+                    placeholder="(INR / Credit)"
+                    value={obdrate}
+                    onChange={(e) => validateInput(e.target.value, setObdRate)}
+                    type="number"
+                  />
+                  <div className="mt-[1.5rem]">
+                    <UniversalButton
+                      label="Save"
+                      id="obdRateSave"
+                      name="obdRateSave"
+                      onClick={handleSaveOBDPricing}
+                    />
+                  </div>
+                </div>
+              </div>
+              <div className="flex justify-center mt-3"></div>
+
+              <Paper sx={{ height: 250 }} id={id} name={name}>
+                <DataGrid
+                  id={id}
+                  name={name}
+                  rows={voicerows}
+                  columns={voiceCols}
+                  initialState={{ pagination: { paginationModel } }}
+                  pageSizeOptions={[10, 20, 50]}
+                  pagination
+                  // paginationModel={paginationModel}
+                  // onPaginationModelChange={setPaginationModel}
+                  rowHeight={45}
+                  // slots={{
+                  //   footer: RcsCustomFooter,
+                  //   noRowsOverlay: CustomNoRowsOverlay,
+                  // }}
+                  onRowSelectionModelChange={(ids) => setSelectedRows(ids)}
+                  disableRowSelectionOnClick
+                  disableColumnResize
+                  disableColumnMenu
+                  sx={{
+                    border: 0,
+                    "& .MuiDataGrid-cell": { outline: "none !important" },
+                    "& .MuiDataGrid-columnHeaders": {
+                      color: "#193cb8",
+                      fontSize: "14px",
+                      fontWeight: "bold !important",
+                    },
+                    "& .MuiDataGrid-row--borderBottom": {
+                      backgroundColor: "#e6f4ff !important",
+                    },
+                    "& .MuiDataGrid-columnSeparator": { color: "#ccc" },
+                  }}
+                />
+              </Paper>
+
+              {/* Edit OBD Rate start */}
+              <Dialog
+                header="Edit OBD Rate"
+                visible={editOBDVoiceVisible}
+                onHide={() => setEditOBDVoiceVisible(false)}
+                style={{ width: "30rem" }}
+                draggable={false}
+                resizable={false}
+              >
+                <div className=" lg:w-100 md:w-100">
+                  <div className="flex flex-wrap gap-4 my-2 lg:w-100 md:w-100 ">
+                    {/* Option 1 */}
+                    <div className="flex items-center gap-2">
+                      <RadioButton
+                        inputId="obdrateOption1"
+                        name="obdrateredio"
+                        value="enable"
+                        onChange={() => {
+                          setEditOBDVoiceForm((prev) => ({
+                            ...prev,
+                            obdrateStatus: "enable",
+                          }));
+                        }}
+                        checked={editOBDVoiceForm.obdrateStatus === "enable"}
+                      />
+                      <label
+                        htmlFor="obdrateOption1"
+                        className="text-sm font-medium text-gray-700 cursor-pointer"
+                      >
+                        @ 15 sec
+                      </label>
+                    </div>
+                    {/* Option 2 */}
+                    <div className="flex items-center gap-2">
+                      <RadioButton
+                        inputId="obdrateOption2"
+                        name="obdrateredio"
+                        value="disable"
+                        onChange={() => {
+                          setEditOBDVoiceForm((prev) => ({
+                            ...prev,
+                            obdrateStatus: "disable",
+                          }));
+                        }}
+                        checked={editOBDVoiceForm.obdrateStatus === "disable"}
+                      />
+                      <label
+                        htmlFor="obdrateOption2"
+                        className="text-sm font-medium text-gray-700 cursor-pointer"
+                      >
+                        @ 30 sec
+                      </label>
+                    </div>
+                  </div>
+                  <div className="flex  gap-5 items-center justify-center mt-3">
+                    <InputField
+                      id="transratesobd"
+                      name="transratesobd"
+                      label="Rate"
+                      placeholder="(INR / Credit)"
+                      value={editOBDVoiceForm.obdrate}
+                      onChange={(e) =>
+                        validateInput(e.target.value, (e) => {
+                          setEditOBDVoiceForm((prev) => ({
+                            ...prev,
+                            obdrate: e,
+                          }));
+                        })
+                      }
+                      type="number"
+                    />
+                    <div className="mt-[1.5rem]">
+                      <UniversalButton
+                        label="Update"
+                        id="updateOBDData"
+                        name="updateOBDData"
+                        onClick={handleObdUpdate}
+                      />
+                    </div>
+                  </div>
+                </div>
+              </Dialog>
+              {/* Edit OBD Rate End */}
+            </>
+          </CustomTabPanel>
+
+          {/* NumberLookup */}
+          <CustomTabPanel value={value} index={4}>
+            <>
+              {enableServices.find((s) => s.name == "HLR")?.enable ? (
+                <p className={badgeClasses.enabled}>Enabled</p>
+              ) : (
+                <p className={badgeClasses.disabled}>Disabled</p>
+              )}
+              <div className="flex  w-full gap-4 pb-5 align-middle lg:flex-nowrap p-6 md:m-3 lg:m-0">
+                <div className="flex flex-col md:flex-row items-start justify-center md:justify-start md:items-end gap-4">
+                  <div className="flex items-end gap-5">
+                    <div className="w-full md:w-64">
+                      <InputField
+                        label="Add Lookup Rate"
+                        placeholder="(INR / Credit)"
+                        type="number"
+                        value={numberLookupRate}
+                        onChange={(e) => setNumberLookupRate(e.target.value)}
+                      />
+                    </div>
+                    <div className="">
+                      <UniversalButton
+                        label="Save"
+                        id="updateNumberlookupData"
+                        name="updateNumberlookupData"
+                        onClick={handleNumberLookupSave}
+                      />
+                    </div>
+                  </div>
+                  <div className="rounded-lg shadow-md w-60 md:w-full p-3 bg-gray-100 flex items-center  gap-5">
+                    <div className="text-gray-700 font-medium text-sm">
+                      Assigned Rate : ₹ {numberLookupRate}
+                    </div>
+                    <div className="text-gray-700 font-medium text-sm">
+                      Insert Time: {numberLookupInsertTime}
+                    </div>
+                    <div className="flex gap-2">
+                      <div>
+                        <DeleteIcon
+                          className="text-red-500 cursor-pointer"
+                          sx={{
+                            fontSize: "18px",
+                          }}
+                          onClick={() => setNumberLookupRateDeleteVisible(true)}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Delete Number Lookup Rate */}
+              <Dialog
+                header="Delete Number Lookup Rate"
+                visible={numberLookupRateDeleteVisible}
+                style={{ width: "27rem" }}
+                onHide={() => setNumberLookupRateDeleteVisible(false)}
+                draggable={false}
+              >
+                <div className="flex items-center justify-center">
+                  <CancelOutlinedIcon sx={{ fontSize: 64, color: "#ff3f3f" }} />
+                </div>
+                <div className="p-4 text-center">
+                  <p className="text-[1.1rem] font-semibold text-gray-700">
+                    Delete Pricing?
+                  </p>
+                  <p className="text-sm text-gray-500 mt-1">
+                    This action cannot be undone.
+                  </p>
+                </div>
+                <div className="flex justify-center gap-4 mt-4">
+                  <UniversalButton
+                    label="Cancel"
+                    onClick={() => setNumberLookupRateDeleteVisible(false)}
+                  />
+                  <UniversalButton
+                    label="Delete"
+                    onClick={handleNumberLookupRateDelete}
+                  />
+                </div>
+              </Dialog>
+            </>
+          </CustomTabPanel>
+
+          {/* Two way sms */}
+          {/* <CustomTabPanel value={value} index={4}>
+            <>
+              <div className="flex flex-wrap items-end justify-start w-full gap-4 pb-5 align-middle lg:flex-nowrap">
+                <AnimatedDropdown
+                  id="twowayselect"
+                  name="twowayselect"
+                  label="Assign Validity"
+                  options={twowayOptions}
+                  value={twowayAssign}
+                  onChange={(value) => setTwowayAssign(value)}
+                />
+                <InputField
+                  id="twowayrate"
+                  name="twowayrate"
+                  label="Rate"
+                  placeholder="INR"
+                  type="number"
+                />
+              </div>
+              <div className="flex justify-center mt-3">
+                <UniversalButton
+                  label="Save"
+                  id="twowaysave"
+                  name="twowaysave"
+                />
+              </div>
+            </>
+          </CustomTabPanel> */}
+
+          {/* Missed Call */}
+          <CustomTabPanel value={value} index={5}>
+            <>
+              <div className="flex flex-wrap items-end justify-start w-full gap-4 pb-5 align-middle lg:flex-nowrap">
+                <AnimatedDropdown
+                  id="misscallselect"
+                  name="misscallselect"
+                  label="Assign Validity"
+                  options={misscallOptions}
+                  value={misscallAssign}
+                  onChange={(value) => setMisscallAssign(value)}
+                />
+                <InputField
+                  id="misscallrate"
+                  name="misscallrate"
+                  label="Rate"
+                  placeholder="INR"
+                  type="number"
+                />
+              </div>
+              <div className="flex justify-center mt-3">
+                <UniversalButton
+                  label="Save"
+                  id="misscallsave"
+                  name="misscallsave"
+                />
+              </div>
+            </>
+          </CustomTabPanel>
+
+          {/* C2C */}
+          <CustomTabPanel value={value} index={6}>
+            <>
+              <div className="flex flex-wrap items-end justify-start w-full gap-4 pb-5 align-middle lg:flex-nowrap lg:w-100 md:w-100">
+                <InputField
+                  id="clickrate"
+                  name="clickrate"
+                  label="Rate"
+                  placeholder="(INR / Credit)"
+                  type="number"
+                />
+              </div>
+              <div className="flex justify-center mt-3">
+                <UniversalButton label="Save" id="clicksave" name="clicksave" />
+              </div>
+            </>
+          </CustomTabPanel>
+
+          {/* Email */}
+          <CustomTabPanel value={value} index={7}>
+            <>
+              <div className="flex flex-wrap items-end justify-start w-full gap-4 pb-5 align-middle lg:flex-nowrap">
+                <AnimatedDropdown
+                  id="emailselect"
+                  name="emailselect"
+                  label="Assign Validity"
+                  options={emailOptions}
+                  value={emailAssign}
+                  onChange={(value) => setEmailAssign(value)}
+                />
+                <InputField
+                  id="emailrate"
+                  name="emailrate"
+                  label="Rate"
+                  placeholder="(INR / Credit)"
+                  type="number"
+                />
+              </div>
+
+              <div className="flex justify-center mt-3">
+                <UniversalButton label="Save" id="emailsave" name="emailsave" />
+              </div>
+            </>
+          </CustomTabPanel>
+
+          {/* IBD */}
+          <CustomTabPanel value={value} index={8}>
+            <>
+              <div className="flex flex-wrap items-end justify-start w-full gap-4 pb-5 align-middle lg:flex-nowrap">
+                <AnimatedDropdown
+                  id="ibdselect"
+                  name="ibdselect"
+                  label="Assign Validity"
+                  options={ibdOptions}
+                  value={ibdAssign}
+                  onChange={(value) => setIbdAssign(value)}
+                />
+                <InputField
+                  id="ibdrate"
+                  name="ibdrate"
+                  label="Rate"
+                  placeholder="(INR / Credit)"
+                  type="number"
+                />
+              </div>
+              <div className=" lg:w-100 md:w-100">
+                <div className="flex flex-wrap gap-4 my-2 lg:w-100 md:w-100 ">
+                  {/* Option 1 */}
+                  <div className="flex items-center gap-2">
+                    <RadioButton
+                      inputId="ibdpulseOption1"
+                      name="ibdpulseredio"
+                      value="enable"
+                      onChange={handleChangeibdPulse}
+                      checked={ibdpulseStatus === "enable"}
+                    />
+                    <label
+                      htmlFor="ibdpulseOption1"
+                      className="text-sm font-medium text-gray-700 cursor-pointer"
+                    >
+                      Enable
+                    </label>
+                  </div>
+                  {/* Option 2 */}
+                  <div className="flex items-center gap-2">
+                    <RadioButton
+                      inputId="ibdpulseOption2"
+                      name="ibdpulseredio"
+                      value="disable"
+                      onChange={handleChangeibdPulse}
+                      checked={ibdpulseStatus === "disable"}
+                    />
+                    <label
+                      htmlFor="ibdpulseOption2"
+                      className="text-sm font-medium text-gray-700 cursor-pointer"
+                    >
+                      Disable
+                    </label>
+                  </div>
+                </div>
+                {ibdpulseStatus === "enable" && (
+                  <InputField
+                    id="ibdpulselimit"
+                    name="ibdpulselimit"
+                    label="Pulse Limit"
+                    placeholder="(INR / Credit)"
+                    type="number"
+                  />
+                )}
+              </div>
+              <div className="flex justify-center mt-3">
+                <UniversalButton label="Save" id="ibdsave" name="ibdsave" />
+              </div>
+            </>
+          </CustomTabPanel>
+        </Box>
+      </Dialog>
+      {/* assignRate End*/}
+
+      {/* Manage Api Key Start*/}
+      <Dialog
+        header="Manage Api Key "
+        visible={manageApiKeys}
+        onHide={() => setManageApiKeys(false)}
+        className="w-[30rem]"
+        draggable={false}
+      >
+        <div className="space-y-4">
+          <InputField
+            id="apimanagekey"
+            name="apimanagekey"
+            type="text"
+            label="Old key"
+            placeholder="Enter Old key"
+            value={oldKey}
+            readOnly
+          />
+          <div className="flex items-end gap-2">
+            <div className="flex-1 ">
+              <InputField
+                id="newapikey"
+                name="newapikey"
+                type="text"
+                label="New API Key"
+                placeholder="Generate New Key"
+                value={newAPIKey}
+                readOnly
+                style={{ cursor: "not-allowed", backgroundColor: "#E5E7EB" }}
+              />
+            </div>
+            <div>
+              <button
+                onClick={handleGenerateAPIKey}
+                className="px-2 py-2 text-sm text-white bg-blue-400 rounded-md shadow-md hover:bg-blue-500 focus:outline-none"
+              >
+                Generate Key
+              </button>
+            </div>
+          </div>
+        </div>
+        <div className="flex justify-center mt-4">
+          <UniversalButton
+            label="Save"
+            id="apisaveButton"
+            name="apisaveButton"
+            variant="primary"
+            onClick={handleApiKeySave}
+          />
+        </div>
+      </Dialog>
+      {/* Manage Api Key End*/}
+
+      {/* Generate and reset user password start */}
+      <Dialog
+        header="Update Password"
+        visible={reset}
+        onHide={() => {
+          setreset(false);
+          setNewPassword("");
+        }}
+        className="w-[30rem]"
+        draggable={false}
+      >
+        <div className="space-y-4">
+          <GeneratePasswordSettings
+            id="newPassword"
+            name="newPassword"
+            type={"text"}
+            label="New Password"
+            placeholder="Enter your new password"
+            value={newPassword}
+            setPassword={setNewPassword}
+            onChange={(e) => {
+              setNewPassword(e);
+            }}
+          />
+        </div>
+        <div className="flex justify-center mt-4">
+          <UniversalButton
+            label="Save"
+            id="apisaveButton"
+            name="apisaveButton"
+            variant="primary"
+            onClick={handleResetPassword}
+          />
+        </div>
+      </Dialog >
+      {/* Generate and reset user password end */}
+
+      {/* User Report start*/}
+      <Dialog
+        header="User Report"
+        visible={userReports}
+        onHide={() => setuserReports(false)}
+        className="w-[30rem]"
+        draggable={false}
+      >
+        <div className="flex flex-wrap gap-2 mb-2 lg:w-100 md:w-100">
+          {/* Option 1 */}
+          <div className="flex-1 px-2 py-3 transition-shadow duration-300 bg-white border border-gray-300 rounded-lg cursor-pointer hover:shadow-lg">
+            <div className="flex items-center gap-2">
+              <RadioButton
+                inputId="userreportOption1"
+                name="userreportredio"
+                value="enable"
+                onChange={handleChangeuserreport}
+                checked={userreportStatus === "enable"}
+              />
+              <label
+                htmlFor="userreportOption1"
+                className="text-sm font-medium text-gray-700 cursor-pointer"
+              >
+                Enable
+              </label>
+            </div>
+          </div>
+          {/* Option 2 */}
+          <div className="flex-1  cursor-pointer bg-white border border-gray-300 rounded-lg px-2 py-2.5 hover:shadow-lg transition-shadow duration-300">
+            <div className="flex items-center gap-2">
+              <RadioButton
+                inputId="userreportOption2"
+                name="userreportredio"
+                value="disable"
+                onChange={handleChangeuserreport}
+                checked={userreportStatus === "disable"}
+              />
+              <label
+                htmlFor="userreportOption2"
+                className="text-sm font-medium text-gray-700 cursor-pointer"
+              >
+                Disable
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex justify-center mt-3">
+          <UniversalButton
+            label="Save"
+            id="userreportsave"
+            name="userreportsave"
+          />
+        </div>
+      </Dialog>
+      {/* User Report End*/}
+
+      {/* Assign Service Start*/}
+      <Dialog
+        header="Assign Service"
+        visible={assignService}
+        onHide={() => {
+          setAssignService(false);
+          setCurrentUserSrno(null);
+        }}
+        className="w-[50rem]"
+        draggable={false}
+      >
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-4 mb-6">
+          {allServices.map((item, index) => {
+            return (
+              <div
+                className={`flex items-center px-3 py-3 transition-shadow duration-300 bg-white border border-gray-200 rounded-lg shadow-sm 
+            ${item.disabled ? 'opacity-60 bg-gray-50 cursor-not-allowed' : 'hover:shadow-md cursor-pointer'}`}
+                key={index}
+              >
+                <div className="flex items-center gap-3">
+                  <Checkbox
+                    type="checkbox"
+                    disabled={item.disabled}
+                    id={item.id}
+                    name="assignService"
+                    checked={
+                      enableServices.find((s) => s.name === item.name)
+                        ?.enable || false
+                    }
+                    onChange={handleServiceChange}
+                  // checked={true}
+                  />
+                  <label
+                    htmlFor={item.id}
+                    className={`text-sm font-semibold ${item.disabled ? 'text-gray-400' : 'text-gray-700'} cursor-pointer`}
+                  >
+                    {item.name}
+                  </label>
+                </div>
+
+              </div>
+            );
+          })}
+        </div>
+        <div className="flex items-center justify-center border-t pt-4">
+          <UniversalButton
+            id="assignService"
+            name="assignService"
+            label={assignServiceLoading ? "Assigning..." : "Assign Service"}
+            disabled={assignServiceLoading} // Optional: disable during loading
+            onClick={handleAssignService}
+          />
+        </div>
+      </Dialog>
+      {/* Assign Service End*/}
+    </>
+  );
+};
+
+export default ManageUserTable;

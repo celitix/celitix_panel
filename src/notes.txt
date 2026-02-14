@@ -1,0 +1,59 @@
+FETCH USER BALANCE - DONE
+OTP ENABLE NUMBER
+VIEW USER DETAILS 
+EDIT USER DETAILS
+ASSIGN SERVICE 
+ASSIGN RATE 
+MANAGE API KEY 
+RESET PASSWORD 
+PETM-CHAIN 
+USER REPORT 
+
+
+
+reseller Admin
+user: Devtest
+pass: 7%3uShWk
+
+reseller user with otp enable
+user: dummy
+pass: 12345678
+
+
+
+create a scope of work for a school management where there are some current and future requirements so
+1.shool managements system 
+2. student management 
+3.teacher management 
+4.class management 
+5.attendance management of student 
+6.salary management staff where teaching and non teaching staff 
+7.fees management 
+8.notification management 
+9.time table management 
+
+so these are current requirement 
+and for future 
+1.hostel management 
+2.transportation management 
+3.attendance management of staff where teaching and non teaching staff 
+4.examination portal 
+5.results portal of examination 
+
+
+so as per me and mine senior discussion these are the current so the future and this is a school not the college liek till to 12th class so - there are one admin role and teacher role 
+
+so create a SOW and also add the details proper and the tables and the other where it suitable for future use and advance access 
+
+so here are somne more points regarding 
+1. school manaement - it's a phase where to register each student or staff (teaching and non teaching) and calculate each student journey and there class 
+2.student management - student admission form, where the fees structure like monthly , quarterly and yearly as per student and along which section in the class and for future addons of the if the hostel, transportation and along other future scope 
+3.teacher management - current teacher all with the registered and there salary there time table of each class and there qualification and all the required fields and which whom that the teacher is the class teacher and the attendance should taken by class teacher or other 
+4.class management - here each class have the sections and along to manage the attendace and the class time table and the teachers alotted and other if required 
+5.attendace management of students 
+6.salary management of staff where teaching and non teaching staff 
+7.fees management of student 
+8.notification management - where integrate the cpaas apis where manage the templates and notification and the portal is otp based login 
+9.and time table management of examination 
+
+so this our current vision as per and please suggest that more roles in this like accountant , other staff or role who can create or update student , teacher or other related in current time of school management and in advance and medium level and each and proper roles so please create it proper and suggests and addon proper the phases of the software and we built in the react js and node js and mysql database 
